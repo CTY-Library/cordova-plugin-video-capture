@@ -65,7 +65,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
     </js-module>
 
     <js-module src="www/capture.js" name="capture">
-        <clobbers target="navigator.device.capture" />
+        <clobbers target="MediaCapture" />
     </js-module>
 
     <!-- android -->

@@ -80,6 +80,7 @@
 - (void)pluginInitialize
 {
     self.inUse = NO;
+  
 }
 
 - (void)captureAudio:(CDVInvokedUrlCommand*)command
@@ -211,6 +212,21 @@
     return result;
 }
 
+- (void)startVideoCapture:(CDVInvokedUrlCommand*)command
+{
+   Boolean is_start = [pickerController startVideoCapture];
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"%d",is_start ]];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId ];
+}
+
+- (void)stopVideoCapture:(CDVInvokedUrlCommand*)command
+{
+    [pickerController stopVideoCapture];
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK  messageAsString:@"true" ];
+    [self.commandDelegate sendPluginResult:result  callbackId:command.callbackId ];
+
+}
+
 - (void)captureVideo:(CDVInvokedUrlCommand*)command
 {
     NSString* callbackId = command.callbackId;
@@ -228,6 +244,8 @@
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         // there is a camera, it is available, make sure it can do movies
         pickerController = [[CDVImagePicker alloc] init];
+        
+        
 
         NSArray* types = nil;
         if ([UIImagePickerController respondsToSelector:@selector(availableMediaTypesForSourceType:)]) {
@@ -253,6 +271,10 @@
         pickerController.delegate = self;
         pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
         pickerController.allowsEditing = NO;
+    
+        // add 2023-02-05
+        pickerController.showsCameraControls = NO;
+        
         // iOS 3.0
         pickerController.mediaTypes = [NSArray arrayWithObjects:mediaType, nil];
 
@@ -273,7 +295,15 @@
         // CDVImagePicker specific property
         pickerController.callbackId = callbackId;
         pickerController.modalPresentationStyle = UIModalPresentationCurrentContext;
-        [self.viewController presentViewController:pickerController animated:YES completion:nil];
+     
+//        [self.viewController presentViewController:pickerController animated:YES completion:nil];
+        
+        [self.viewController addChildViewController:pickerController];
+        self.webView.opaque = NO; //
+        self.webView.backgroundColor = [UIColor clearColor];
+        [self.webView.superview addSubview:pickerController.view];
+        [self.webView.superview bringSubviewToFront:self.webView];
+        
     }
 }
 

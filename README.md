@@ -615,6 +615,41 @@ function onDeviceReady() {
 document.addEventListener('deviceready', onDeviceReady);
 ```
 
+```
+eg: 
+
+  gotoVideoCapture(){
+    //const bodyEl:any = window.document.querySelector("Body"); 
+    //bodyEl.style.visibility = 'hidden'
+    //bodyEl.style.background = "transparent" ;
+
+    var that = this;
+    MediaCapture.captureVideo(function(ok){
+      //alert('ok:'+JSON.stringify(ok))
+      var t = ok[0].fullPath;
+      //var t2 = ok[0].localURL;
+      //alert(t);
+      that.zone.run(()=>{
+        that.video_source =  that.domSanitizer.bypassSecurityTrustUrl(AppUtil.formatLocalPreview(t));
+        //alert(that.video_source);
+      });
+    },function(e){alert(e)},null);
+  }
+
+  startVideoCapture(){
+    MediaCapture.startVideoCapture(function(ok){
+      // alert('ok:'+JSON.stringify(ok))     
+    },function(e){alert(e)},null);
+  }
+
+  stopVideoCapture(){
+    MediaCapture.stopVideoCapture(function(ok){
+     // alert('ok:'+JSON.stringify(ok))    
+   },function(e){alert(e)},null);
+  }
+
+```
+
 It is up you to track what part of your code these results are coming from. Be sure to
 save and restore your app's state as part of the [pause][pause-event] and
 [resume][resume-event] events as appropriate. Please note that these events will only

@@ -627,8 +627,6 @@ eg:
     MediaCapture.captureVideo(function(ok){
       //alert('ok:'+JSON.stringify(ok))
       var t = ok[0].fullPath;
-      //var t2 = ok[0].localURL;
-      //alert(t);
       that.zone.run(()=>{
         that.video_source =  that.domSanitizer.bypassSecurityTrustUrl(AppUtil.formatLocalPreview(t));
         //alert(that.video_source);
@@ -639,13 +637,13 @@ eg:
   startVideoCapture(){
     MediaCapture.startVideoCapture(function(ok){
       // alert('ok:'+JSON.stringify(ok))     
-    },function(e){alert(e)},null);
+    },function(e){alert(e)});
   }
 
   stopVideoCapture(){
     MediaCapture.stopVideoCapture(function(ok){
      // alert('ok:'+JSON.stringify(ok))    
-   },function(e){alert(e)},null);
+   },function(e){alert(e)});
   }
 
 ```

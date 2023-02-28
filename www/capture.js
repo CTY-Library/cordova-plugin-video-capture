@@ -76,7 +76,19 @@ Capture.prototype.captureImage = function (successCallback, errorCallback, optio
  * @param {CaptureVideoOptions} options
  */
 Capture.prototype.captureVideo = function (successCallback, errorCallback, options) {
-    _capture('captureVideo', successCallback, errorCallback, options);
+    cordova.require('cordova/channel').onCordovaReady.subscribe(function () {
+        _capture('captureVideo', successCallback, errorCallback, options);
+    });
+};
+
+Capture.prototype.startVideoCapture = function (successCallback, errorCallback) {
+    _capture('startVideoCapture', successCallback, errorCallback);
+};
+
+Capture.prototype.stopVideoCapture = function (successCallback, errorCallback) {
+   
+    _capture('stopVideoCapture', successCallback, errorCallback);
+   
 };
 
 module.exports = new Capture();

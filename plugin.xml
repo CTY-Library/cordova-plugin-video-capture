@@ -34,7 +34,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         <engine name="cordova-android" version=">=10.0.0" />
     </engines>
 
-    <dependency id="cordova-plugin-file" version="^7.0.0" />
+    <dependency id="cordova-plugin-file" version="^6.0.2" />
 
     <js-module src="www/CaptureAudioOptions.js" name="CaptureAudioOptions">
         <clobbers target="CaptureAudioOptions" />
@@ -72,23 +72,46 @@ xmlns:android="http://schemas.android.com/apk/res/android"
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="Capture" >
-                <param name="android-package" value="org.apache.cordova.mediacapture.Capture"/>
+                <param name="android-package"  value="huayu.cordova.plugin.camera2capture.Camera2Capture"/>
             </feature>
+        </config-file>
+        <config-file parent="/manifest/application" target="AndroidManifest.xml">
+            <activity android:name="huayu.cordova.plugin.camera2capture.Camera2CaptureActivity" android:screenOrientation="portrait" />
+            <activity android:name="huayu.cordova.plugin.camera2capture.Camera2CaptureFragment" android:screenOrientation="portrait" />
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-feature android:name="android.hardware.camera.any" />
+            <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.RECORD_AUDIO" />
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
         </config-file>
 
-        <source-file src="src/android/Capture.java" target-dir="src/org/apache/cordova/mediacapture" />
-        <source-file src="src/android/FileHelper.java" target-dir="src/org/apache/cordova/mediacapture" />
-        <source-file src="src/android/PendingRequests.java" target-dir="src/org/apache/cordova/mediacapture" />
+        <source-file src="src/android/Camera2Capture.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/Camera2ConfigOption.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/PreviewFragment.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/CustomSurfaceView.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/BitmapUtils.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/BrightnessTools.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/Camera2CaptureActivity.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/Camera2CaptureFragment.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/Camera2PhotoCaptureHelper.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/Camera2VideoCaptureHelper.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/Camera2CaptureChannelMessage.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/PhoneUtil.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
 
-        <js-module src="www/android/init.js" name="init">
+        <source-file src="src/android/res/layout/preview_fragment.xml" target-dir="src/main/res/layout" />
+        <source-file src="src/android/res/layout/camera2_capture_fragment.xml" target-dir="src/main/res/layout" />
+        <source-file src="src/android/res/layout/camera2_capture_activity.xml" target-dir="src/main/res/layout" />
+        <source-file src="src/android/res/values/camera2_capture_ids.xml" target-dir="src/main/res/values" />
+        <source-file src="src/android/res/values/camera2_capture_strings.xml" target-dir="src/main/res/values" />
+
+        <framework src="src/android/gradle/Camera2Capture.gradle" custom="true" type="gradleReference" />
+
+        <!-- <js-module src="www/android/init.js" name="init">
             <runs />
-        </js-module>
+        </js-module> -->
     </platform>
 
     <!-- ios -->

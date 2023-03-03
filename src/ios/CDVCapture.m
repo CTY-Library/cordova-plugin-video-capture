@@ -239,6 +239,7 @@
     // options could contain limit, duration and mode
     // taking more than one video (limit) is only supported if provide own controls via cameraOverlayView property
     NSNumber* duration = [options objectForKey:@"duration"];
+    NSString* is_front = [options objectForKey:@"is_front"]; // "1" or "true"  前置摄像头
     NSString* mediaType = nil;
 
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
@@ -274,7 +275,10 @@
     
         // add 2023-02-05
         pickerController.showsCameraControls = NO;
-        //  pickerController.cameraDevice = UIImagePickerControllerCameraDeviceFront; // 前置摄像头
+        if([is_front  isEqual: @"1"] || [is_front  isEqual: @"true"]){
+            pickerController.cameraDevice = UIImagePickerControllerCameraDeviceFront;//前置摄像头
+        }
+
 
         // iOS 3.0
         pickerController.mediaTypes = [NSArray arrayWithObjects:mediaType, nil];
@@ -297,8 +301,9 @@
         pickerController.callbackId = callbackId;
         pickerController.modalPresentationStyle = UIModalPresentationCurrentContext;
      
-//        [self.viewController presentViewController:pickerController animated:YES completion:nil];
-        
+        // [self.viewController presentViewController:pickerController animated:YES completion:nil];
+
+        // add 2023-02-05
         [self.viewController addChildViewController:pickerController];
         self.webView.opaque = NO; //
         self.webView.backgroundColor = [UIColor clearColor];

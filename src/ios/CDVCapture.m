@@ -274,7 +274,8 @@
     
         // add 2023-02-05
         pickerController.showsCameraControls = NO;
-        
+        //  pickerController.cameraDevice = UIImagePickerControllerCameraDeviceFront; // 前置摄像头
+
         // iOS 3.0
         pickerController.mediaTypes = [NSArray arrayWithObjects:mediaType, nil];
 

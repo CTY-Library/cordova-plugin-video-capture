@@ -263,13 +263,31 @@ public class Camera2VideoCaptureHelper {
 
     mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);// 设置音频来源
     mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);// 设置视频来源
-    mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);// 设置输出格式
-    mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);// 设置音频编码格式，请注意这里使用默认，实际app项目需要考虑兼容问题，应该选择AAC
-    mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);// 设置视频编码格式，请注意这里使用默认，实际app项目需要考虑兼容问题，应该选择H264
-    mMediaRecorder.setVideoEncodingBitRate(8 * 1024 * 1920);// 设置比特率 一般是 1*分辨率 到 10*分辨率 之间波动。比特率越大视频越清晰但是视频文件也越大。
-    mMediaRecorder.setVideoFrameRate(30);// 设置帧数 选择 30即可， 过大帧数也会让视频文件更大当然也会更流畅，但是没有多少实际提升。人眼极限也就30帧了。
+    mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);// 设置输出格式
+    mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);// 设置音频编码格式，请注意这里使用默认，实际app项目需要考虑兼容问题，应该选择AAC
+    mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);// 设置视频编码格式，请注意这里使用默认，实际app项目需要考虑兼容问题，应该选择H264
+
+    mMediaRecorder.setVideoEncodingBitRate(1 * 1080 * 1920);// 设置比特率 一般是 1*分辨率 到 10*分辨率 之间波动。比特率越大视频越清晰但是视频文件也越大。
+
+    mMediaRecorder.setAudioEncodingBitRate(64*1024);
+    mMediaRecorder.setAudioSamplingRate(44100);
+    mMediaRecorder.setAudioChannels(2);
+
+    mMediaRecorder.setVideoFrameRate(24);// 设置帧数 选择 30即可， 过大帧数也会让视频文件更大当然也会更流畅，但是没有多少实际提升。人眼极限也就30帧了。
     Size size = getMatchingSize2();
-    mMediaRecorder.setVideoSize(size.getWidth(), size.getHeight());
+    int iwidth = size.getWidth();
+    int iheight = size.getHeight();
+    if(  iwidth > iheight && iwidth  > 1920){
+      iheight = 1920 * iheight /  iwidth  ;
+      iwidth =  1920;
+
+    }
+    if(  iwidth < iheight && iheight  > 1920){
+      iwidth = 1920 * iwidth  / iheight   ;
+      iheight = 1920;
+    }
+
+    mMediaRecorder.setVideoSize(iwidth,iheight); //760,360
     mMediaRecorder.setOrientationHint(90);
     Surface surface = new Surface(mTextureView.getSurfaceTexture());
     mMediaRecorder.setPreviewDisplay(surface);

@@ -121,12 +121,20 @@ xmlns:android="http://schemas.android.com/apk/res/android"
                 <param name="ios-package" value="CDVCapture" />
             </feature>
         </config-file>
+        <header-file src="src/ios/CtyVideoTranscode.h" />
+        <source-file src="src/ios/CtyVideoTranscode.m" />
+        <header-file src="src/ios/CtyAVAssetExportSession.h" />
+        <source-file src="src/ios/CtyAVAssetExportSession.m" />
         <header-file src="src/ios/CDVCapture.h" />
         <source-file src="src/ios/CDVCapture.m" />
         <resource-file src="src/ios/CDVCapture.bundle" />
 
         <framework src="CoreGraphics.framework" />
-        <framework src="MobileCoreServices.framework" />
+        <framework src="MobileCoreServices.framework" />        
+        <framework src="AssetsLibrary.framework" />
+        <framework src="AVFoundation.framework" />
+        <framework src="MediaPlayer.framework" />
+        <framework src="CoreVideo.framework" />
 
     </platform>
 

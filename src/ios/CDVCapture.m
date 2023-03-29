@@ -21,6 +21,7 @@
 #import "CDVFile.h"
 #import <Cordova/CDVAvailability.h>
 
+
 #define kW3CMediaFormatHeight @"height"
 #define kW3CMediaFormatWidth @"width"
 #define kW3CMediaFormatCodecs @"codecs"
@@ -251,13 +252,17 @@
         NSArray* types = nil;
         if ([UIImagePickerController respondsToSelector:@selector(availableMediaTypesForSourceType:)]) {
             types = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypeCamera];
-            // NSLog(@"MediaTypes: %@", [types description]);
+            
+            NSLog(@"MediaTypes: %@", [types description]);
 
             if ([types containsObject:(NSString*)kUTTypeMovie]) {
                 mediaType = (NSString*)kUTTypeMovie;
             } else if ([types containsObject:(NSString*)kUTTypeVideo]) {
                 mediaType = (NSString*)kUTTypeVideo;
             }
+            
+            //mediaType = (NSString*)kUTTypeMPEG4;
+            //mediaType = (NSString*)kUTTypeAppleProtectedMPEG4Video;
         }
     }
     if (!mediaType) {
@@ -278,8 +283,7 @@
         if([is_front  isEqual: @"1"] || [is_front  isEqual: @"true"]){
             pickerController.cameraDevice = UIImagePickerControllerCameraDeviceFront;//前置摄像头
         }
-
-
+        
         // iOS 3.0
         pickerController.mediaTypes = [NSArray arrayWithObjects:mediaType, nil];
 
@@ -301,9 +305,8 @@
         pickerController.callbackId = callbackId;
         pickerController.modalPresentationStyle = UIModalPresentationCurrentContext;
      
-        // [self.viewController presentViewController:pickerController animated:YES completion:nil];
-
-        // add 2023-02-05
+//        [self.viewController presentViewController:pickerController animated:YES completion:nil];
+        
         [self.viewController addChildViewController:pickerController];
         self.webView.opaque = NO; //
         self.webView.backgroundColor = [UIColor clearColor];
@@ -325,7 +328,21 @@
         NSLog(@"finished saving movie");
     }*/
     // create MediaFile object
-    NSDictionary* fileDict = [self getMediaDictionaryFromPath:moviePath ofType:nil];
+    
+    
+    //moviePath
+     CtyVideoTranscode *transcode = [CtyVideoTranscode alloc];
+    transcode.saveToPhotoAlbum = true;
+    transcode.outputFileType = MPEG4;
+    
+    CFUUIDRef uuidObj = CFUUIDCreate(nil);//create a new UUID
+    //get the string representation of the UUID
+    NSString* uuidString = (NSString*)CFBridgingRelease(CFUUIDCreateString(nil, uuidObj));
+    CFRelease(uuidObj);
+    
+    NSString* outputPath = [transcode transcodeVideo:moviePath videoFileName: uuidString ];
+    
+    NSDictionary* fileDict = [self getMediaDictionaryFromPath:outputPath ofType:nil];
     NSArray* fileArray = [NSArray arrayWithObject:fileDict];
 
     return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:fileArray];

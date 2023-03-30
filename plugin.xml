@@ -27,8 +27,8 @@ xmlns:android="http://schemas.android.com/apk/res/android"
     <description>Cordova video Capture Plugin</description>
     <license>Apache 2.0</license>
     <keywords>cordova,video,capture</keywords>
-    <repo>https://github.com/lounai-chen/cordova-plugin-video-capture</repo>
-    <issue>https://github.com/lounai-chen/cordova-plugin-video-capture/issues</issue>
+    <repo>https://github.com/CTY-Library/cordova-plugin-video-capture</repo>
+    <issue>https://github.com/CTY-Library/cordova-plugin-video-capture/issues</issue>
 
     <engines>
         <engine name="cordova-android" version=">=10.0.0" />

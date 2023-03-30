@@ -51,7 +51,7 @@
 
     
     if(self.videoBitrate==0){
-        self.videoBitrate=1000000;
+        self.videoBitrate= 2000000;
     }
     if(self.audioChannels==0){
         self.audioChannels=2;

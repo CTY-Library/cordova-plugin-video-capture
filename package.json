@@ -1,7 +1,7 @@
 {
   "name": "cordova-plugin-video-capture",
   "version": "1.0.1",
-  "description": "Cordova Media Capture Plugin",
+  "description": "Cordova video Capture Plugin",
   "types": "./types/index.d.ts",
   "cordova": {
     "id": "cordova-plugin-video-capture",
@@ -12,16 +12,15 @@
       "browser"
     ]
   },
-  "repository": "github:lounai-chen/cordova-plugin-video-capture",
-  "bugs": "https://github.com/lounai-chen/cordova-plugin-video-capture/issues",
+  "repository": "github:CTY-Library/cordova-plugin-video-capture",
+  "bugs": "https://github.com/CTY-Library/cordova-plugin-video-capture/issues",
   "keywords": [
     "cordova",
     "media",
     "capture",
     "ecosystem:cordova",
     "cordova-android",
-    "cordova-ios",
-    "cordova-windows"
+    "cordova-ios"
   ],
   "scripts": {
     "test": "npm run lint",

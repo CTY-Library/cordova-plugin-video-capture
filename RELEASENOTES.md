@@ -22,43 +22,43 @@
 
 ### 4.0.0 (May 25, 2022)
 
-* [GH-238](https://github.com/apache/cordova-plugin-media-capture/pull/238) dep!: bump `cordova-plugin-file@^7.0.0`
-* [GH-248](https://github.com/apache/cordova-plugin-media-capture/pull/248) test: remove `cordova-plugin-media` dependency
-* [GH-247](https://github.com/apache/cordova-plugin-media-capture/pull/247) chore: bump `cordovaDependencies` next next major cordova requirement
-* [GH-246](https://github.com/apache/cordova-plugin-media-capture/pull/246) chore: rebuilt `package-lock` w/ v2
-* [GH-192](https://github.com/apache/cordova-plugin-media-capture/pull/192) fix(android): Unify and fix permission check
-* [GH-231](https://github.com/apache/cordova-plugin-media-capture/pull/231) ci(ios): update workflow w/ **iOS** 15
-* [GH-230](https://github.com/apache/cordova-plugin-media-capture/pull/230) ci: add `action-badge`
-* [GH-229](https://github.com/apache/cordova-plugin-media-capture/pull/229) ci: remove `travis` & `appveyor`
-* [GH-228](https://github.com/apache/cordova-plugin-media-capture/pull/228) ci: add `gh-actions` workflows
-* [GH-200](https://github.com/apache/cordova-plugin-media-capture/pull/200) fix(android): remove unknown permission `android.permission.RECORD_VIDEO`
-* [GH-203](https://github.com/apache/cordova-plugin-media-capture/pull/203) ci: add node-14.x to workflow
-* [GH-193](https://github.com/apache/cordova-plugin-media-capture/pull/193) chore: clean up `package.json`
-* [GH-189](https://github.com/apache/cordova-plugin-media-capture/pull/189) ci(travis): update osx xcode image
-* [GH-177](https://github.com/apache/cordova-plugin-media-capture/pull/177) breaking(ios): remove code warnings
-* [GH-188](https://github.com/apache/cordova-plugin-media-capture/pull/188) ci(travis): updates **Android** API level
-* [GH-180](https://github.com/apache/cordova-plugin-media-capture/pull/180) chore: adds `package-lock` file
-* [GH-179](https://github.com/apache/cordova-plugin-media-capture/pull/179) refactor(eslint): use `cordova-eslint` /w fix
-* [GH-178](https://github.com/apache/cordova-plugin-media-capture/pull/178) chore(npm): use short notation in `package.json`
+* [GH-238](https://github.com/apache/cordova-plugin-video-capture/pull/238) dep!: bump `cordova-plugin-file@^7.0.0`
+* [GH-248](https://github.com/apache/cordova-plugin-video-capture/pull/248) test: remove `cordova-plugin-media` dependency
+* [GH-247](https://github.com/apache/cordova-plugin-video-capture/pull/247) chore: bump `cordovaDependencies` next next major cordova requirement
+* [GH-246](https://github.com/apache/cordova-plugin-video-capture/pull/246) chore: rebuilt `package-lock` w/ v2
+* [GH-192](https://github.com/apache/cordova-plugin-video-capture/pull/192) fix(android): Unify and fix permission check
+* [GH-231](https://github.com/apache/cordova-plugin-video-capture/pull/231) ci(ios): update workflow w/ **iOS** 15
+* [GH-230](https://github.com/apache/cordova-plugin-video-capture/pull/230) ci: add `action-badge`
+* [GH-229](https://github.com/apache/cordova-plugin-video-capture/pull/229) ci: remove `travis` & `appveyor`
+* [GH-228](https://github.com/apache/cordova-plugin-video-capture/pull/228) ci: add `gh-actions` workflows
+* [GH-200](https://github.com/apache/cordova-plugin-video-capture/pull/200) fix(android): remove unknown permission `android.permission.RECORD_VIDEO`
+* [GH-203](https://github.com/apache/cordova-plugin-video-capture/pull/203) ci: add node-14.x to workflow
+* [GH-193](https://github.com/apache/cordova-plugin-video-capture/pull/193) chore: clean up `package.json`
+* [GH-189](https://github.com/apache/cordova-plugin-video-capture/pull/189) ci(travis): update osx xcode image
+* [GH-177](https://github.com/apache/cordova-plugin-video-capture/pull/177) breaking(ios): remove code warnings
+* [GH-188](https://github.com/apache/cordova-plugin-video-capture/pull/188) ci(travis): updates **Android** API level
+* [GH-180](https://github.com/apache/cordova-plugin-video-capture/pull/180) chore: adds `package-lock` file
+* [GH-179](https://github.com/apache/cordova-plugin-video-capture/pull/179) refactor(eslint): use `cordova-eslint` /w fix
+* [GH-178](https://github.com/apache/cordova-plugin-video-capture/pull/178) chore(npm): use short notation in `package.json`
 * chore(asf): update git notification settings
 * Update CONTRIBUTING.md
-* [GH-165](https://github.com/apache/cordova-plugin-media-capture/pull/165) ci: updates Node.js versions
-* [GH-164](https://github.com/apache/cordova-plugin-media-capture/pull/164) chore(npm): improve ignore list
-* [GH-161](https://github.com/apache/cordova-plugin-media-capture/pull/161) Small javadoc fix
+* [GH-165](https://github.com/apache/cordova-plugin-video-capture/pull/165) ci: updates Node.js versions
+* [GH-164](https://github.com/apache/cordova-plugin-video-capture/pull/164) chore(npm): improve ignore list
+* [GH-161](https://github.com/apache/cordova-plugin-video-capture/pull/161) Small javadoc fix
 * ci(travis): upgrade to node 8
 
 ### 3.0.3 (Jun 19, 2019)
 
--   fix(android): Catch ActivityNotFoundException ([#104](https://github.com/apache/cordova-plugin-media-capture/issues/104)) ([`f69ba2a`](https://github.com/apache/cordova-plugin-media-capture/commit/f69ba2a))
--   fix(android): [CB-14260](https://issues.apache.org/jira/browse/CB-14260) (android) captureImage permission denial on android 8.1 ([#95](https://github.com/apache/cordova-plugin-media-capture/issues/95)) ([`3755f9f`](https://github.com/apache/cordova-plugin-media-capture/commit/3755f9f))
--   docs: remove outdated translations ([`6422b2b`](https://github.com/apache/cordova-plugin-media-capture/commit/6422b2b))
--   build: add `.npmignore` to remove unneeded files from npm package ([`586f917`](https://github.com/apache/cordova-plugin-media-capture/commit/586f917))
--   build: add `.gitattributes` to force LF (instead of possible CRLF on Windows) ([`246ce57`](https://github.com/apache/cordova-plugin-media-capture/commit/246ce57))
--   ci(travis): Update Travis CI configuration for new paramedic ([#134](https://github.com/apache/cordova-plugin-media-capture/issues/134)) ([`f59af25`](https://github.com/apache/cordova-plugin-media-capture/commit/f59af25))
--   chore(github): Add or update GitHub pull request and issue template ([`e5a982e`](https://github.com/apache/cordova-plugin-media-capture/commit/e5a982e))
--   docs: remove JIRA link ([`c3928c8`](https://github.com/apache/cordova-plugin-media-capture/commit/c3928c8))
--   ci(travis): also accept terms for android sdk `android-27` ([`59966ac`](https://github.com/apache/cordova-plugin-media-capture/commit/59966ac))
--   chore(types): Add CaptureError.CAPTURE_PERMISSION_DENIED to type declaration file [#98](https://github.com/apache/cordova-plugin-media-capture/issues/98) ([`eff0128`](https://github.com/apache/cordova-plugin-media-capture/commit/eff0128), [`5fb4917`](https://github.com/apache/cordova-plugin-media-capture/commit/5fb4917))
+-   fix(android): Catch ActivityNotFoundException ([#104](https://github.com/apache/cordova-plugin-video-capture/issues/104)) ([`f69ba2a`](https://github.com/apache/cordova-plugin-video-capture/commit/f69ba2a))
+-   fix(android): [CB-14260](https://issues.apache.org/jira/browse/CB-14260) (android) captureImage permission denial on android 8.1 ([#95](https://github.com/apache/cordova-plugin-video-capture/issues/95)) ([`3755f9f`](https://github.com/apache/cordova-plugin-video-capture/commit/3755f9f))
+-   docs: remove outdated translations ([`6422b2b`](https://github.com/apache/cordova-plugin-video-capture/commit/6422b2b))
+-   build: add `.npmignore` to remove unneeded files from npm package ([`586f917`](https://github.com/apache/cordova-plugin-video-capture/commit/586f917))
+-   build: add `.gitattributes` to force LF (instead of possible CRLF on Windows) ([`246ce57`](https://github.com/apache/cordova-plugin-video-capture/commit/246ce57))
+-   ci(travis): Update Travis CI configuration for new paramedic ([#134](https://github.com/apache/cordova-plugin-video-capture/issues/134)) ([`f59af25`](https://github.com/apache/cordova-plugin-video-capture/commit/f59af25))
+-   chore(github): Add or update GitHub pull request and issue template ([`e5a982e`](https://github.com/apache/cordova-plugin-video-capture/commit/e5a982e))
+-   docs: remove JIRA link ([`c3928c8`](https://github.com/apache/cordova-plugin-video-capture/commit/c3928c8))
+-   ci(travis): also accept terms for android sdk `android-27` ([`59966ac`](https://github.com/apache/cordova-plugin-video-capture/commit/59966ac))
+-   chore(types): Add CaptureError.CAPTURE_PERMISSION_DENIED to type declaration file [#98](https://github.com/apache/cordova-plugin-video-capture/issues/98) ([`eff0128`](https://github.com/apache/cordova-plugin-video-capture/commit/eff0128), [`5fb4917`](https://github.com/apache/cordova-plugin-video-capture/commit/5fb4917))
 
 ### 3.0.2 (Apr 12, 2018)
 * [CB-13866](https://issues.apache.org/jira/browse/CB-13866): **iOS** fix Camera opens in portrait orientation on iphones
@@ -133,7 +133,7 @@
 * Add `CaptureVideoOption` for quality
 
 ### 1.0.1 (Jun 17, 2015)
-* [CB-9128](https://issues.apache.org/jira/browse/CB-9128) cordova-plugin-media-capture documentation translation: cordova-plugin-media-capture
+* [CB-9128](https://issues.apache.org/jira/browse/CB-9128) cordova-plugin-video-capture documentation translation: cordova-plugin-video-capture
 * fix npm md issue
 
 ### 1.0.0 (Apr 15, 2015)
@@ -150,7 +150,7 @@
 * [CB-8653](https://issues.apache.org/jira/browse/CB-8653) Updated Readme
 * [CB-8659](https://issues.apache.org/jira/browse/CB-8659): ios: 4.0.x Compatibility: Remove use of initWebView method
 * [CB-8571](https://issues.apache.org/jira/browse/CB-8571) Integrate TravisCI
-* [CB-8438](https://issues.apache.org/jira/browse/CB-8438) cordova-plugin-media-capture documentation translation: cordova-plugin-media-capture
+* [CB-8438](https://issues.apache.org/jira/browse/CB-8438) cordova-plugin-video-capture documentation translation: cordova-plugin-video-capture
 * [CB-8538](https://issues.apache.org/jira/browse/CB-8538) Added package.json file
 
 ### 0.3.6 (Feb 04, 2015)
@@ -161,7 +161,7 @@
 
 ### 0.3.5 (Dec 02, 2014)
 * [CB-7597](https://issues.apache.org/jira/browse/CB-7597) - `Localizable.strings` for Media Capture are in the default template, it should be in the plugin
-* [CB-7700](https://issues.apache.org/jira/browse/CB-7700) cordova-plugin-media-capture documentation translation: cordova-plugin-media-capture
+* [CB-7700](https://issues.apache.org/jira/browse/CB-7700) cordova-plugin-video-capture documentation translation: cordova-plugin-video-capture
 
 ### 0.3.4 (Oct 03, 2014)
 * [CB-7453](https://issues.apache.org/jira/browse/CB-7453) Adds fallback to m4a audio format when mp3 recording fails.

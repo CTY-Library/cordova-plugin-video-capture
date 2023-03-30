@@ -1,10 +1,10 @@
 {
-  "name": "cordova-plugin-media-capture",
-  "version": "4.0.1-dev",
+  "name": "cordova-plugin-video-capture",
+  "version": "1.0.1",
   "description": "Cordova Media Capture Plugin",
   "types": "./types/index.d.ts",
   "cordova": {
-    "id": "cordova-plugin-media-capture",
+    "id": "cordova-plugin-video-capture",
     "platforms": [
       "android",
       "ios",
@@ -12,8 +12,8 @@
       "browser"
     ]
   },
-  "repository": "github:apache/cordova-plugin-media-capture",
-  "bugs": "https://github.com/apache/cordova-plugin-media-capture/issues",
+  "repository": "github:lounai-chen/cordova-plugin-video-capture",
+  "bugs": "https://github.com/lounai-chen/cordova-plugin-video-capture/issues",
   "keywords": [
     "cordova",
     "media",

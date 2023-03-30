@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.camera2capture;
+package huayu.cordova.plugin.videocapture;
 
 import android.Manifest;
 import android.content.Context;
@@ -41,9 +41,9 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
-public class Camera2PhotoCaptureHelper {
+public class CtyVideoPhotoCaptureHelper {
 
-  private static final String TAG = Camera2VideoCaptureHelper.class.getSimpleName();
+  private static final String TAG = CtyVideoCaptureHelper.class.getSimpleName();
   private CameraManager mCameraManager;
   private ImageReader mImageReader;
   private CameraDevice mCameraDevice;
@@ -69,12 +69,12 @@ public class Camera2PhotoCaptureHelper {
   private static final int SAVE_WIDTH = 720; // 保存图片的宽度
   private static final int SAVE_HEIGHT = 1280; // 保存图片的高度
 
-  private Camera2CaptureActivity mActivity;
+  private CtyVideoCaptureActivity mActivity;
   private TextureView mTextureView;
 
   private int screenWidth;
 
-  public Camera2PhotoCaptureHelper(Camera2CaptureActivity activity, TextureView textureView) {
+  public CtyVideoPhotoCaptureHelper(CtyVideoCaptureActivity activity, TextureView textureView) {
     this.mActivity = activity;
     this.mTextureView = textureView;
     Display display = mActivity.getWindowManager().getDefaultDisplay();

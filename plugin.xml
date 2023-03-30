@@ -20,15 +20,15 @@
 
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
 xmlns:android="http://schemas.android.com/apk/res/android"
-           id="cordova-plugin-media-capture"
-      version="4.0.1-dev">
+           id="cordova-plugin-video-capture"
+      version="1.0.1">
     <name>Capture</name>
 
-    <description>Cordova Media Capture Plugin</description>
+    <description>Cordova video Capture Plugin</description>
     <license>Apache 2.0</license>
-    <keywords>cordova,media,capture</keywords>
-    <repo>https://github.com/apache/cordova-plugin-media-capture</repo>
-    <issue>https://github.com/apache/cordova-plugin-media-capture/issues</issue>
+    <keywords>cordova,video,capture</keywords>
+    <repo>https://github.com/lounai-chen/cordova-plugin-video-capture</repo>
+    <issue>https://github.com/lounai-chen/cordova-plugin-video-capture/issues</issue>
 
     <engines>
         <engine name="cordova-android" version=">=10.0.0" />
@@ -65,19 +65,19 @@ xmlns:android="http://schemas.android.com/apk/res/android"
     </js-module>
 
     <js-module src="www/capture.js" name="capture">
-        <clobbers target="MediaCapture" />
+        <clobbers target="VideoCapture" />
     </js-module>
 
     <!-- android -->
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="Capture" >
-                <param name="android-package"  value="huayu.cordova.plugin.camera2capture.Camera2Capture"/>
+                <param name="android-package"  value="huayu.cordova.plugin.videocapture.CtyVideoCapture"/>
             </feature>
         </config-file>
         <config-file parent="/manifest/application" target="AndroidManifest.xml">
-            <activity android:name="huayu.cordova.plugin.camera2capture.Camera2CaptureActivity" android:screenOrientation="portrait" />
-            <activity android:name="huayu.cordova.plugin.camera2capture.Camera2CaptureFragment" android:screenOrientation="portrait" />
+            <activity android:name="huayu.cordova.plugin.videocapture.CtyVideoCaptureActivity" android:screenOrientation="portrait" />
+            <activity android:name="huayu.cordova.plugin.videocapture.CtyVideoCaptureFragment" android:screenOrientation="portrait" />
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/*">
@@ -88,18 +88,18 @@ xmlns:android="http://schemas.android.com/apk/res/android"
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
         </config-file>
 
-        <source-file src="src/android/Camera2Capture.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/Camera2ConfigOption.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/PreviewFragment.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/CustomSurfaceView.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/BitmapUtils.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/BrightnessTools.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/Camera2CaptureActivity.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/Camera2CaptureFragment.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/Camera2PhotoCaptureHelper.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/Camera2VideoCaptureHelper.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/Camera2CaptureChannelMessage.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
-        <source-file src="src/android/PhoneUtil.java" target-dir="src/huayu/cordova/plugin/camera2capture" />
+        <source-file src="src/android/CtyVideoCapture.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/CtyVideoConfigOption.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/PreviewFragment.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/CustomSurfaceView.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/BitmapUtils.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/BrightnessTools.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/CtyVideoCaptureActivity.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/CtyVideoCaptureFragment.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/CtyVideoPhotoCaptureHelper.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/CtyVideoCaptureHelper.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/CtyVideoCaptureChannelMessage.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
+        <source-file src="src/android/PhoneUtil.java" target-dir="src/huayu/cordova/plugin/CtyVideoCapture" />
 
         <source-file src="src/android/res/layout/preview_fragment.xml" target-dir="src/main/res/layout" />
         <source-file src="src/android/res/layout/camera2_capture_fragment.xml" target-dir="src/main/res/layout" />
@@ -107,7 +107,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         <source-file src="src/android/res/values/camera2_capture_ids.xml" target-dir="src/main/res/values" />
         <source-file src="src/android/res/values/camera2_capture_strings.xml" target-dir="src/main/res/values" />
 
-        <framework src="src/android/gradle/Camera2Capture.gradle" custom="true" type="gradleReference" />
+        <framework src="src/android/gradle/CtyVideoCapture.gradle" custom="true" type="gradleReference" />
 
         <!-- <js-module src="www/android/init.js" name="init">
             <runs />

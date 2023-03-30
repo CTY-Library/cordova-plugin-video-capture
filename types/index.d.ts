@@ -1,5 +1,5 @@
 // Type definitions for Apache Cordova MediaCapture plugin
-// Project: https://github.com/apache/cordova-plugin-media-capture
+// Project: https://github.com/apache/cordova-plugin-video-capture
 // Definitions by: Microsoft Open Technologies Inc <http://msopentech.com>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // 

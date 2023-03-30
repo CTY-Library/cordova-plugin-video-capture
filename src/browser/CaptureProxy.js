@@ -19,9 +19,9 @@
  *
  */
 
-var MediaFile = require('cordova-plugin-media-capture.MediaFile');
-var MediaFileData = require('cordova-plugin-media-capture.MediaFileData');
-var CaptureError = require('cordova-plugin-media-capture.CaptureError');
+var MediaFile = require('cordova-plugin-video-capture.MediaFile');
+var MediaFileData = require('cordova-plugin-video-capture.MediaFileData');
+var CaptureError = require('cordova-plugin-video-capture.CaptureError');
 
 /**
  * Helper function that converts data URI to Blob

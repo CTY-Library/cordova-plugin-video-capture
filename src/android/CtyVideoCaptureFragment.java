@@ -1,5 +1,6 @@
-package huayu.cordova.plugin.camera2capture;
+package huayu.cordova.plugin.videocapture;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
@@ -17,14 +18,14 @@ import androidx.annotation.RequiresApi;
 
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link Camera2CaptureFragment#newInstance} factory method to
+ * Use the {@link CtyVideoCaptureFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class Camera2CaptureFragment extends Fragment {
+public class CtyVideoCaptureFragment extends Fragment {
 
-  private static final String Key_Height = "Camera2ConfigOption.Height";
-  private static final String Key_Width = "Camera2ConfigOption.Width";
-  private static final String Key_Duration = "Camera2ConfigOption.Duration";
+  private static final String Key_Height = "CtyVideoConfigOption.Height";
+  private static final String Key_Width = "CtyVideoConfigOption.Width";
+  private static final String Key_Duration = "CtyVideoConfigOption.Duration";
   public  static int Durantion=15;
   public  static Context mAppContext;
 
@@ -32,10 +33,12 @@ public class Camera2CaptureFragment extends Fragment {
   private String mWidthKey;
   private String mDurationKey;
 
+  private  CtyVideoConfigOption cfgOption;
+
   private View mPageView;
   private String appResourcesPackage;
 
-  public static Camera2VideoCaptureHelper camera2VideoCaptureHelper;
+  public static CtyVideoCaptureHelper CtyVideoCaptureHelper;
   private TextureView mTextureView;
   private ImageView image;
   private int mHeight;
@@ -43,9 +46,15 @@ public class Camera2CaptureFragment extends Fragment {
   private int mDuration = 0;
   private Activity mActivity;
 
-  public Camera2CaptureFragment() {
+  public CtyVideoCaptureFragment() {
     // Required empty public constructor
+
   }
+
+  public  void setInputParams(CtyVideoConfigOption configOption){
+    cfgOption = configOption;
+  }
+
 
   /**
    * Use this factory method to create a new instance of
@@ -54,10 +63,10 @@ public class Camera2CaptureFragment extends Fragment {
    * @param height Parameter 1.
    * @param width Parameter 2.
    * @param duration Parameter 2.
-   * @return A new instance of fragment Camera2CaptureFragment.
+   * @return A new instance of fragment CtyVideoCaptureFragment.
    */
-  public static Camera2CaptureFragment newInstance(int height, int width ,int duration) {
-    Camera2CaptureFragment fragment = new Camera2CaptureFragment();
+  public static CtyVideoCaptureFragment newInstance(int height, int width ,int duration) {
+    CtyVideoCaptureFragment fragment = new CtyVideoCaptureFragment();
     Bundle args = new Bundle();
     args.putInt(Key_Height, height);
     args.putInt(Key_Width, width);
@@ -69,14 +78,7 @@ public class Camera2CaptureFragment extends Fragment {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    if (getArguments() != null) {
-      mHeight = getArguments().getInt(Key_Height);
-      mWidth = getArguments().getInt(Key_Width);
-      int duration = getArguments().getInt(Key_Duration);
-      if (duration > 0) {
-        mDuration = duration;
-      }
-    }
+
 
   }
 
@@ -105,8 +107,7 @@ public class Camera2CaptureFragment extends Fragment {
 
     int textureViewId=getResources().getIdentifier("camera2_capture_container","id",appResourcesPackage);
     mTextureView = mPageView.findViewById(textureViewId);
-    // mTextureView = mPageView.findViewById(R.id.camera2_capture_container);
-    camera2VideoCaptureHelper = new Camera2VideoCaptureHelper(getActivity(), mTextureView, getResources().getDisplayMetrics(),mDuration);
+    CtyVideoCaptureHelper = new CtyVideoCaptureHelper(getActivity(), mTextureView, getResources().getDisplayMetrics(),cfgOption);
     initBrightness();
     return mPageView;
   }
@@ -128,6 +129,6 @@ public class Camera2CaptureFragment extends Fragment {
   @Override
   public void onDestroy() {
     super.onDestroy();
-    camera2VideoCaptureHelper.releaseThread();
+    CtyVideoCaptureHelper.releaseThread();
   }
 }

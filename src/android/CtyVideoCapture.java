@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.camera2capture;
+package huayu.cordova.plugin.videocapture;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
@@ -51,18 +51,18 @@ import java.util.Arrays;
 /**
  * This class echoes a string called from JavaScript.
  */
-public class Camera2Capture extends CordovaPlugin {
+public class CtyVideoCapture extends CordovaPlugin {
 
   private static CallbackContext execingCallbackContext;
   private static int previewFragmentId = 1231231;
   private static CordovaWebView mCordovaWebView;
 
-  private Camera2ConfigOption configOption;
-  private Camera2CaptureFragment mCamera2CaptureFragment;
+  private CtyVideoConfigOption configOption;
+  private CtyVideoCaptureFragment mCtyVideoCaptureFragment;
   private int containerViewId = 12312321;
   private ViewParent mViewParent;
 
-  public Camera2Capture() {
+  public CtyVideoCapture() {
     super();
   }
 
@@ -71,15 +71,18 @@ public class Camera2Capture extends CordovaPlugin {
 
     if (action.equals("captureVideo")) {
       execingCallbackContext = callbackContext;
-      // JSONObject options = args.optJSONObject(0);
-      // configOption = new Camera2ConfigOption(options, callbackContext);
-      //configOption = new Camera2ConfigOption(args.getInt(0),args.getInt(1),args.getInt(2), callbackContext);
+      JSONObject options = args.optJSONObject(0);
+      configOption = new CtyVideoConfigOption(options, callbackContext);
+      //configOption = new CtyVideoConfigOption(args.getInt(0),args.getInt(1),args.getInt(2), callbackContext);
       if (allPermissionsGranted()) {
         this.initFragment(configOption, callbackContext);
       } else {
         cordova.requestPermissions(this, Configuration.REQUEST_CODE_PERMISSIONS,
           Configuration.REQUIRED_PERMISSIONS);
       }
+//      if(){//前置摄像头
+//        selectCamera(callbackContext);
+//      }
       return true;
     } else if (action.equals("stopVideoCapture")) {
       endVideoCapture(callbackContext);
@@ -96,18 +99,19 @@ public class Camera2Capture extends CordovaPlugin {
 
 
 
-  private void initFragment(Camera2ConfigOption configOption, CallbackContext callbackContext) {
-    mCamera2CaptureFragment.Durantion = 0;//configOption.Duration;
-    mCamera2CaptureFragment.mAppContext = cordova.getContext();
+  private void initFragment(CtyVideoConfigOption configOption, CallbackContext callbackContext) {
+    mCtyVideoCaptureFragment.Durantion = 0;//configOption.Duration;
+    mCtyVideoCaptureFragment.mAppContext = cordova.getContext();
 
-    mCamera2CaptureFragment = null;
-    if (mCamera2CaptureFragment == null) {
-      mCamera2CaptureFragment = new Camera2CaptureFragment();
-      Bundle fragmentArguments= new Bundle();
-      // fragmentArguments.putInt("Camera2ConfigOption.Height",configOption.Height);
-      // fragmentArguments.putInt("Camera2ConfigOption.Width",configOption.Width);
-      // fragmentArguments.putInt("Camera2ConfigOption.Duration",configOption.Duration);
-      mCamera2CaptureFragment.setArguments(fragmentArguments);
+    mCtyVideoCaptureFragment = null;
+    if (mCtyVideoCaptureFragment == null) {
+      mCtyVideoCaptureFragment = new CtyVideoCaptureFragment();
+      //Bundle fragmentArguments= new Bundle();
+//       fragmentArguments.putInt("CtyVideoConfigOption.Height",configOption.Height);
+//       fragmentArguments.putInt("CtyVideoConfigOption.Width",configOption.Width);
+//       fragmentArguments.putInt("CtyVideoConfigOption.Duration",configOption.Duration);
+     // mCtyVideoCaptureFragment.setArguments(fragmentArguments);
+      mCtyVideoCaptureFragment.setInputParams(configOption);
       cordova.getActivity().runOnUiThread(new Runnable() {
 
         @Override
@@ -150,7 +154,7 @@ public class Camera2Capture extends CordovaPlugin {
 
           FragmentManager fragmentManager = cordova.getActivity().getFragmentManager();
           FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-          fragmentTransaction.add(containerView.getId(), mCamera2CaptureFragment);
+          fragmentTransaction.add(containerView.getId(), mCtyVideoCaptureFragment);
           fragmentTransaction.commit();
         }
       });
@@ -162,28 +166,28 @@ public class Camera2Capture extends CordovaPlugin {
   private void recordVideo(CallbackContext callbackContext) {
     // execingCallbackContext=callbackContext;
     mCordovaWebView=this.webView;
-    if (mCamera2CaptureFragment.camera2VideoCaptureHelper == null) {
+    if (mCtyVideoCaptureFragment.CtyVideoCaptureHelper == null) {
       callbackContext.error("请先执行init进行初始化");
     }
-    mCamera2CaptureFragment.camera2VideoCaptureHelper.startRecorder();
-   // CallJS(new Camera2CaptureChannelMessage("start", true,"success"));
+    mCtyVideoCaptureFragment.CtyVideoCaptureHelper.startRecorder();
+   // CallJS(new CtyVideoCaptureChannelMessage("start", true,"success"));
   }
 
   private void endVideoCapture(CallbackContext callbackContext) throws JSONException {
     //execingCallbackContext=callbackContext;
-    if (mCamera2CaptureFragment.camera2VideoCaptureHelper == null) {
+    if (mCtyVideoCaptureFragment.CtyVideoCaptureHelper == null) {
       callbackContext.error("请先执行init进行初始化");
     }
-   mCamera2CaptureFragment.camera2VideoCaptureHelper.stopRecorder();
+   mCtyVideoCaptureFragment.CtyVideoCaptureHelper.stopRecorder();
 
   }
 
 
   private void selectCamera(CallbackContext callbackContext) {
-    if (mCamera2CaptureFragment.camera2VideoCaptureHelper == null) {
+    if (mCtyVideoCaptureFragment.CtyVideoCaptureHelper == null) {
       callbackContext.error("请先执行init进行初始化");
     }
-    mCamera2CaptureFragment.camera2VideoCaptureHelper.exchangeCamera();
+    mCtyVideoCaptureFragment.CtyVideoCaptureHelper.exchangeCamera();
     callbackContext.success("success");
   }
 

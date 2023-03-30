@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.camera2capture;
+package huayu.cordova.plugin.videocapture;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -39,9 +39,9 @@ import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class Camera2VideoCaptureHelper {
+public class CtyVideoCaptureHelper {
 
-  private static final String TAG = Camera2VideoCaptureHelper.class.getSimpleName();
+  private static final String TAG = CtyVideoCaptureHelper.class.getSimpleName();
   private CameraManager mCameraManager;
   private CameraDevice mCameraDevice;
   private CameraCaptureSession mCameraCaptureSession;
@@ -70,6 +70,8 @@ public class Camera2VideoCaptureHelper {
 
   private int screenWidth;
 
+  private CtyVideoConfigOption cfgOption;
+
   private CameraDevice.StateCallback mCameraDeviceStateCallback;
   private CameraCaptureSession.StateCallback mSessionStateCallback;
   private CameraCaptureSession.CaptureCallback mSessionCaptureCallback;
@@ -84,7 +86,7 @@ public class Camera2VideoCaptureHelper {
   private boolean timerOnRunning = false; // 定时器是否正在执行
   private File mCurrentFile;//当前录像保存到的文件信息
 
-  public Camera2VideoCaptureHelper(Activity activity, TextureView textureView, DisplayMetrics displayMetrics) {
+  public CtyVideoCaptureHelper(Activity activity, TextureView textureView, DisplayMetrics displayMetrics) {
     this.mActivity = activity;
     this.mTextureView = textureView;
     Display display = mActivity.getWindowManager().getDefaultDisplay();
@@ -97,7 +99,7 @@ public class Camera2VideoCaptureHelper {
   }
 
 
-  public Camera2VideoCaptureHelper(Activity activity, TextureView textureView, DisplayMetrics displayMetrics,int maxDuration) {
+  public CtyVideoCaptureHelper(Activity activity, TextureView textureView, DisplayMetrics displayMetrics,CtyVideoConfigOption configOption) {
     this.mActivity = activity;
     this.mTextureView = textureView;
     Display display = mActivity.getWindowManager().getDefaultDisplay();
@@ -106,10 +108,12 @@ public class Camera2VideoCaptureHelper {
     display.getSize(outSize);
     screenWidth = outSize.x;// 得到屏幕的宽度
     this.displayMetrics = displayMetrics;
-    init();
-    if(maxDuration>0){
-      mDuration=maxDuration;
+    cfgOption = configOption;
+    if(cfgOption.is_front.equals("1") || cfgOption.is_front.equals("true")){
+      mCameraFacing = CameraCharacteristics.LENS_FACING_FRONT;
     }
+    init();
+
   }
 
   private void init() {
@@ -259,7 +263,7 @@ public class Camera2VideoCaptureHelper {
    */
   private void configMediaRecorder() {
 
-    mCurrentFile= Camera2Capture.Configuration.CreateFile(mActivity.getBaseContext(), ".mp4");
+    mCurrentFile= CtyVideoCapture.Configuration.CreateFile(mActivity.getBaseContext(), ".mp4");
 
     mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);// 设置音频来源
     mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);// 设置视频来源
@@ -267,22 +271,21 @@ public class Camera2VideoCaptureHelper {
     mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);// 设置音频编码格式，请注意这里使用默认，实际app项目需要考虑兼容问题，应该选择AAC
     mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);// 设置视频编码格式，请注意这里使用默认，实际app项目需要考虑兼容问题，应该选择H264
 
-    mMediaRecorder.setVideoEncodingBitRate(1 * 1080 * 1920);// 设置比特率 一般是 1*分辨率 到 10*分辨率 之间波动。比特率越大视频越清晰但是视频文件也越大。
+    mMediaRecorder.setVideoEncodingBitRate(cfgOption.videoBitrate);// 设置比特率 一般是 1*分辨率 到 10*分辨率 之间波动。比特率越大视频越清晰但是视频文件也越大。
 
-    mMediaRecorder.setAudioEncodingBitRate(64*1024);
-    mMediaRecorder.setAudioSamplingRate(44100);
-    mMediaRecorder.setAudioChannels(2);
+    mMediaRecorder.setAudioEncodingBitRate(cfgOption.audioBitrate);
+    mMediaRecorder.setAudioSamplingRate(cfgOption.audioSampleRate);
+    mMediaRecorder.setAudioChannels(cfgOption.audioChannels);
 
-    mMediaRecorder.setVideoFrameRate(24);// 设置帧数 选择 30即可， 过大帧数也会让视频文件更大当然也会更流畅，但是没有多少实际提升。人眼极限也就30帧了。
+    mMediaRecorder.setVideoFrameRate(cfgOption.videoFrameRate);// 设置帧数 选择 30即可， 过大帧数也会让视频文件更大当然也会更流畅，但是没有多少实际提升。人眼极限也就30帧了。
     Size size = getMatchingSize2();
-    int iwidth = size.getWidth();
-    int iheight = size.getHeight();
-    if(  iwidth > iheight && iwidth  > 1920){
+    int iwidth = cfgOption.width==0? size.getWidth() :cfgOption.width;
+    int iheight = cfgOption.height==0? size.getHeight():cfgOption.height;
+    if(iwidth > iheight && iwidth  > 1920){
       iheight = 1920 * iheight /  iwidth  ;
       iwidth =  1920;
-
     }
-    if(  iwidth < iheight && iheight  > 1920){
+    if(iwidth < iheight && iheight  > 1920){
       iwidth = 1920 * iwidth  / iheight   ;
       iheight = 1920;
     }
@@ -329,16 +332,16 @@ public class Camera2VideoCaptureHelper {
           mTimer.schedule(timerTask,1000,1000);
         }
         mMediaRecorder.start();
-        //Camera2Capture.CallJS(new Camera2CaptureChannelMessage("start", true, "success"));
+        //CtyVideoCapture.CallJS(new CtyVideoCaptureChannelMessage("start", true, "success"));
       }
       catch(Exception e){
         e.printStackTrace();
         Log.e(TAG,"开始录制视频时发现异常");
-        //Camera2Capture.CallJS(new Camera2CaptureChannelMessage("start", false, "开始录制视频时发现异常"));
+        //CtyVideoCapture.CallJS(new CtyVideoCaptureChannelMessage("start", false, "开始录制视频时发现异常"));
       }
       return;
     }else{
-      //Camera2Capture.CallJS(new Camera2CaptureChannelMessage("start", false, "已经开始录制视频，无需重复操作"));
+      //CtyVideoCapture.CallJS(new CtyVideoCaptureChannelMessage("start", false, "已经开始录制视频，无需重复操作"));
     }
   }
 
@@ -363,8 +366,8 @@ public class Camera2VideoCaptureHelper {
       mMediaRecorder.reset();
     }
     mMediaRecorder.reset();
-    JSONArray mediaFile= Camera2Capture.GetMediaFileInfo(videoFile);
-    Camera2Capture.CallJSMsg(mediaFile);
+    JSONArray mediaFile= CtyVideoCapture.GetMediaFileInfo(videoFile);
+    CtyVideoCapture.CallJSMsg(mediaFile);
 
   }
 
@@ -480,7 +483,7 @@ public class Camera2VideoCaptureHelper {
             break;
         }
         Log.e(TAG, message);
-        //Camera2Capture.CallJS(new Camera2CaptureChannelMessage("CameraDeviceState", false, message));
+        //CtyVideoCapture.CallJS(new CtyVideoCaptureChannelMessage("CameraDeviceState", false, message));
       }
     };
   }

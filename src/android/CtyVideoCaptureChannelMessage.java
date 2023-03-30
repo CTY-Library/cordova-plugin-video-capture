@@ -1,21 +1,21 @@
-package huayu.cordova.plugin.camera2capture;
+package huayu.cordova.plugin.videocapture;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public final class Camera2CaptureChannelMessage<T> {
+public final class CtyVideoCaptureChannelMessage<T> {
   public String Action;
 
   public boolean IsSuccess=false;
 
   public T Message= null ;
 
-  public Camera2CaptureChannelMessage(String action, boolean isSuccess) {
+  public CtyVideoCaptureChannelMessage(String action, boolean isSuccess) {
     Action = action;
     IsSuccess = isSuccess;
   }
 
-  public Camera2CaptureChannelMessage(String action, boolean isSuccess, T message) {
+  public CtyVideoCaptureChannelMessage(String action, boolean isSuccess, T message) {
     Action = action;
     IsSuccess = isSuccess;
     Message = message;

@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.camera2capture;
+package huayu.cordova.plugin.videocapture;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -9,8 +9,8 @@ import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
-public class Camera2CaptureActivity extends Activity {
-  public static Camera2VideoCaptureHelper camera2VideoCaptureHelper;
+public class CtyVideoCaptureActivity extends Activity {
+  public static CtyVideoCaptureHelper CtyVideoCaptureHelper;
   private TextureView textureView;
   private ImageView image;
   private int Height;
@@ -22,10 +22,10 @@ public class Camera2CaptureActivity extends Activity {
     super.onCreate(savedInstanceState);
     if(savedInstanceState!=null)
     {
-//    configOption=  savedInstanceState.getSerializable("Camera2ConfigOption");
-      int height= savedInstanceState.getInt("Camera2ConfigOption.Height");
-      int Width=  savedInstanceState.getInt("Camera2ConfigOption.Width");
-      int duration= savedInstanceState.getInt("Camera2ConfigOption.Duration");
+//    configOption=  savedInstanceState.getSerializable("CtyVideoConfigOption");
+      int height= savedInstanceState.getInt("CtyVideoConfigOption.Height");
+      int Width=  savedInstanceState.getInt("CtyVideoConfigOption.Width");
+      int duration= savedInstanceState.getInt("CtyVideoConfigOption.Duration");
       if(duration>0)
       {
         Duration=duration;
@@ -44,7 +44,7 @@ public class Camera2CaptureActivity extends Activity {
     int viewContentId=getResources().getIdentifier("camera2_capture_container","id",getPackageName());
     textureView = findViewById(viewContentId);
     // textureView = findViewById(R.id.camera2_capture_container);
-    camera2VideoCaptureHelper = new Camera2VideoCaptureHelper(this, textureView,getResources().getDisplayMetrics());
+    CtyVideoCaptureHelper = new CtyVideoCaptureHelper(this, textureView,getResources().getDisplayMetrics());
 
     initBrightness();
   }
@@ -64,6 +64,6 @@ public class Camera2CaptureActivity extends Activity {
     super.onDestroy();
 
 
-    camera2VideoCaptureHelper.releaseThread();
+    CtyVideoCaptureHelper.releaseThread();
   }
 }

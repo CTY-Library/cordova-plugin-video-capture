@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.videocapture;
+package com.cty.CtyVideoCapture;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -42,7 +42,7 @@ public class PreviewFragment extends Fragment{
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
       appResourcesPackage = getActivity().getPackageName();
-      int pageViewId=getResources().getIdentifier("preview_fragment","layout",appResourcesPackage);
+      int pageViewId=getResources().getIdentifier("cty_video_capture_preview_fragment","layout",appResourcesPackage);
       pageView = inflater.inflate(pageViewId, container, false);
       //inflater.inflate(getResources().getIdentifier("activity_push", "layout", appResourcesPackage), container, false);
 

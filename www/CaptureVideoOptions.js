@@ -24,26 +24,24 @@
  */
 var CaptureVideoOptions = function () {
     // Upper limit of videos user can record. Value must be equal or greater than 1.
-    this.limit = 1;
+    limit = 1;
 
     // Maximum duration of a single video clip in seconds.
-    this.duration = 0;  
+    duration = 0;  
 
-    this.is_front = "0" // 默认后置摄像头 
-    this.outputFileType = 1;  // 1 : mp4 , 2 : mov
-    this.optimizeForNetworkUse = true; //only ios 压缩
-    this.saveToPhotoAlbum = true; //only ios 保存到相册, 安卓还未实现   //todo android
-    this.maintainAspectRatio = true; //  保持长宽比不变  //todo android
-    this.width = 0;
-    this.height = 0;
-    this.videoBitrate = 0; //码率
-    this.audioChannels =2 ;//通道
-    this.audioSampleRate = 44100; //样本率
-    this.audioBitrate = 64*1024; //比特率
-    this.videoFrameRate = 24; //only android,帧数
-      
-  
-
+    is_front = "0" // 默认后置摄像头 
+    outputFileType = 1;  // 1 : mp4 , 2 : mov
+    optimizeForNetworkUse = true; //only ios 压缩
+    saveToPhotoAlbum = true; //only ios 保存到相册, 安卓还未实现   //todo android
+    maintainAspectRatio = true; //  保持长宽比不变  //todo android
+    width = 0;
+    height = 0;
+    videoBitrate = 0; //码率
+    audioChannels =2 ;//通道
+    audioSampleRate = 44100; //样本率
+    audioBitrate = 64*1024; //比特率
+    videoFrameRate = 24; //only android,帧数
+    
 };
 
 module.exports = CaptureVideoOptions;

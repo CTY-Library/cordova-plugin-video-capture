@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.videocapture;
+package com.cty.CtyVideoCapture;
 
 import android.app.Activity;
 import android.content.ContentResolver;

@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.videocapture;
+package com.cty.CtyVideoCapture;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
@@ -11,6 +11,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -51,7 +52,7 @@ import java.util.Arrays;
 /**
  * This class echoes a string called from JavaScript.
  */
-public class CtyVideoCapture extends CordovaPlugin {
+public class CtyVideoCaptureCordova extends CordovaPlugin {
 
   private static CallbackContext execingCallbackContext;
   private static int previewFragmentId = 1231231;
@@ -62,7 +63,7 @@ public class CtyVideoCapture extends CordovaPlugin {
   private int containerViewId = 12312321;
   private ViewParent mViewParent;
 
-  public CtyVideoCapture() {
+  public CtyVideoCaptureCordova() {
     super();
   }
 
@@ -80,9 +81,7 @@ public class CtyVideoCapture extends CordovaPlugin {
         cordova.requestPermissions(this, Configuration.REQUEST_CODE_PERMISSIONS,
           Configuration.REQUIRED_PERMISSIONS);
       }
-//      if(){//前置摄像头
-//        selectCamera(callbackContext);
-//      }
+
       return true;
     } else if (action.equals("stopVideoCapture")) {
       endVideoCapture(callbackContext);
@@ -106,11 +105,6 @@ public class CtyVideoCapture extends CordovaPlugin {
     mCtyVideoCaptureFragment = null;
     if (mCtyVideoCaptureFragment == null) {
       mCtyVideoCaptureFragment = new CtyVideoCaptureFragment();
-      //Bundle fragmentArguments= new Bundle();
-//       fragmentArguments.putInt("CtyVideoConfigOption.Height",configOption.Height);
-//       fragmentArguments.putInt("CtyVideoConfigOption.Width",configOption.Width);
-//       fragmentArguments.putInt("CtyVideoConfigOption.Duration",configOption.Duration);
-     // mCtyVideoCaptureFragment.setArguments(fragmentArguments);
       mCtyVideoCaptureFragment.setInputParams(configOption);
       cordova.getActivity().runOnUiThread(new Runnable() {
 
@@ -228,12 +222,42 @@ public class CtyVideoCapture extends CordovaPlugin {
       : new String[] { Manifest.permission.CAMERA,
       Manifest.permission.RECORD_AUDIO };
 
-    public static File CreateFile(Context context, String extension) {
-      String timeStamp = new SimpleDateFormat(Configuration.FILENAME_FORMAT).format(new Date());
-      String tempFileName = timeStamp + extension;
-      String filePath = context.getExternalCacheDir().getAbsolutePath() + File.separator + tempFileName;
-      File targetFile = new File(filePath);
-      return targetFile;
+    public static File CreateFile(boolean saveToPhotoAlbum, Context context, String extension) {
+      String outputFileName = new SimpleDateFormat(Configuration.FILENAME_FORMAT).format(new Date());
+      String tempFileName = outputFileName + extension;
+      if (saveToPhotoAlbum) {
+        final PackageManager pm = context.getPackageManager();
+        ApplicationInfo ai;
+        try {
+          ai = pm.getApplicationInfo(context.getPackageName(), 0);
+        } catch (final PackageManager.NameNotFoundException e) {
+          ai = null;
+        }
+        final String appName = (String) (ai != null ? pm.getApplicationLabel(ai) : "Unknown");
+        File mediaStorageDir = GetMediaStorageDir("DCIM",appName);
+        if(mediaStorageDir==null){
+          mediaStorageDir = GetMediaStorageDir("Movies",appName);
+        }
+        File targetFile = new File(mediaStorageDir.getPath(), tempFileName);
+        return targetFile;
+      } else {
+        String filePath = context.getExternalCacheDir().getAbsolutePath() + File.separator + tempFileName;
+        File targetFile = new File(filePath);
+        return targetFile;
+      }
+    }
+
+    private  static File  GetMediaStorageDir(String parent,String child){
+      File mediaStorageDir =  new File(Environment.getExternalStorageDirectory() + "/"+parent, child);
+      if (!mediaStorageDir.exists()) {
+        if (!mediaStorageDir.mkdirs()) {
+          mediaStorageDir = new File(Environment.getExternalStorageDirectory() + "/"+parent);
+          if (!mediaStorageDir.exists()) {
+            return null;
+          }
+        }
+      }
+      return mediaStorageDir;
     }
 
   }

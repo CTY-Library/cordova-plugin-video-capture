@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.videocapture;
+package com.cty.CtyVideoCapture;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -18,6 +18,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.DisplayMetrics;
@@ -35,7 +36,9 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -263,7 +266,7 @@ public class CtyVideoCaptureHelper {
    */
   private void configMediaRecorder() {
 
-    mCurrentFile= CtyVideoCapture.Configuration.CreateFile(mActivity.getBaseContext(), ".mp4");
+    mCurrentFile = CtyVideoCaptureCordova.Configuration.CreateFile(cfgOption.saveToPhotoAlbum, mActivity.getBaseContext(), ".mp4");
 
     mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);// 设置音频来源
     mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);// 设置视频来源
@@ -276,11 +279,12 @@ public class CtyVideoCaptureHelper {
     mMediaRecorder.setAudioEncodingBitRate(cfgOption.audioBitrate);
     mMediaRecorder.setAudioSamplingRate(cfgOption.audioSampleRate);
     mMediaRecorder.setAudioChannels(cfgOption.audioChannels);
-
+    mMediaRecorder.setCaptureRate(cfgOption.videoFrameRate);
     mMediaRecorder.setVideoFrameRate(cfgOption.videoFrameRate);// 设置帧数 选择 30即可， 过大帧数也会让视频文件更大当然也会更流畅，但是没有多少实际提升。人眼极限也就30帧了。
     Size size = getMatchingSize2();
-    int iwidth = cfgOption.width==0? size.getWidth() :cfgOption.width;
-    int iheight = cfgOption.height==0? size.getHeight():cfgOption.height;
+    int iwidth =  size.getWidth() ;
+    int iheight =  size.getHeight();
+
     if(iwidth > iheight && iwidth  > 1920){
       iheight = 1920 * iheight /  iwidth  ;
       iwidth =  1920;
@@ -288,6 +292,19 @@ public class CtyVideoCaptureHelper {
     if(iwidth < iheight && iheight  > 1920){
       iwidth = 1920 * iwidth  / iheight   ;
       iheight = 1920;
+    }
+
+    if(cfgOption.width>0 && cfgOption.height>0 ){
+      iwidth = cfgOption.width;
+      iheight = cfgOption.height;
+    }
+    else if(cfgOption.width>0){
+      iheight = cfgOption.width * iheight /  iwidth  ;
+      iwidth = cfgOption.width;
+    }
+    else if(cfgOption.height>0){
+      iwidth = cfgOption.height * iwidth  / iheight   ;
+      iheight = cfgOption.height;
     }
 
     mMediaRecorder.setVideoSize(iwidth,iheight); //760,360
@@ -366,8 +383,8 @@ public class CtyVideoCaptureHelper {
       mMediaRecorder.reset();
     }
     mMediaRecorder.reset();
-    JSONArray mediaFile= CtyVideoCapture.GetMediaFileInfo(videoFile);
-    CtyVideoCapture.CallJSMsg(mediaFile);
+    JSONArray mediaFile= CtyVideoCaptureCordova.GetMediaFileInfo(videoFile);
+    CtyVideoCaptureCordova.CallJSMsg(mediaFile);
 
   }
 

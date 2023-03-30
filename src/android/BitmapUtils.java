@@ -1,4 +1,4 @@
-package huayu.cordova.plugin.videocapture;
+package com.cty.CtyVideoCapture;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

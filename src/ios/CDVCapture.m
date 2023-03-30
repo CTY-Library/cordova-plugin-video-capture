@@ -359,6 +359,15 @@
     NSDictionary* fileDict = [self getMediaDictionaryFromPath:outputPath ofType:nil];
     NSArray* fileArray = [NSArray arrayWithObject:fileDict];
 
+    @try {
+        NSFileManager *fm = [NSFileManager defaultManager];
+        [fm removeItemAtPath:moviePath error:NULL];
+    } @catch (NSException *exception) {
+        
+    } @finally {
+        
+    }
+
     return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:fileArray];
 }
 

@@ -41,6 +41,8 @@
 
 @implementation CDVImagePicker
 
+
+
 @synthesize quality;
 @synthesize callbackId;
 @synthesize mimeType;
@@ -92,7 +94,7 @@
     if ([options isKindOfClass:[NSNull class]]) {
         options = [NSDictionary dictionary];
     }
-
+    self->cfgoptions = options;
     NSNumber* duration = [options objectForKey:@"duration"];
     // the default value of duration is 0 so use nil (no duration) if default value
     if (duration) {
@@ -236,7 +238,7 @@
     if ([options isKindOfClass:[NSNull class]]) {
         options = [NSDictionary dictionary];
     }
-
+    self->cfgoptions = options;
     // options could contain limit, duration and mode
     // taking more than one video (limit) is only supported if provide own controls via cameraOverlayView property
     NSNumber* duration = [options objectForKey:@"duration"];
@@ -332,13 +334,25 @@
     
     //moviePath
      CtyVideoTranscode *transcode = [CtyVideoTranscode alloc];
-    transcode.saveToPhotoAlbum = true;
+    
     transcode.outputFileType = MPEG4;
     
     CFUUIDRef uuidObj = CFUUIDCreate(nil);//create a new UUID
     //get the string representation of the UUID
     NSString* uuidString = (NSString*)CFBridgingRelease(CFUUIDCreateString(nil, uuidObj));
     CFRelease(uuidObj);
+    
+     
+    transcode.optimizeForNetworkUse =  [self->cfgoptions objectForKey:@"optimizeForNetworkUse"];
+    transcode.saveToPhotoAlbum =  [self->cfgoptions objectForKey:@"saveToPhotoAlbum"];
+    transcode.maintainAspectRatio =  [self->cfgoptions objectForKey:@"maintainAspectRatio"];
+    transcode.width =  [[self->cfgoptions objectForKey:@"width"] floatValue];
+    transcode.height =  [[self->cfgoptions objectForKey:@"height"] floatValue];
+    transcode.videoBitrate =  [[self->cfgoptions objectForKey:@"videoBitrate"] intValue];
+    transcode.audioChannels =  [[self->cfgoptions objectForKey:@"audioChannels"] intValue];
+    transcode.audioSampleRate =  [[self->cfgoptions objectForKey:@"audioSampleRate"] intValue];
+    transcode.audioBitrate =  [[self->cfgoptions objectForKey:@"audioBitrate"] intValue];
+
     
     NSString* outputPath = [transcode transcodeVideo:moviePath videoFileName: uuidString ];
     

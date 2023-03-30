@@ -43,13 +43,13 @@ typedef NSUInteger CDVCaptureError;
 @property (assign) NSInteger quality;
 @property (copy)   NSString* callbackId;
 @property (copy)   NSString* mimeType;
-
 @end
 
 @interface CDVCapture : CDVPlugin <UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 {
     CDVImagePicker* pickerController;
     BOOL inUse;
+    NSDictionary* cfgoptions ;
 }
 @property BOOL inUse;
 - (void)captureAudio:(CDVInvokedUrlCommand*)command;

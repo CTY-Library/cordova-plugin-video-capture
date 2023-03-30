@@ -12,7 +12,7 @@
       "browser"
     ]
   },
-  "repository": "github:lounai-chen/cordova-plugin-video-capture",
+  "repository": "github:CTY-Library/cordova-plugin-video-capture",
   "bugs": "https://github.com/CTY-Library/cordova-plugin-video-capture/issues",
   "keywords": [
     "cordova",

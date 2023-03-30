@@ -60,7 +60,6 @@ Although in the global scope, it is not available until after the `deviceready` 
 - Android
 - Browser
 - iOS
-- Windows
 
 ## Objects
 
@@ -76,78 +75,16 @@ Although in the global scope, it is not available until after the `deviceready` 
 
 ## Methods
 
-- capture.captureAudio
 - capture.captureImage
 - capture.captureVideo
 - MediaFile.getFormatData
 
 ## Properties
 
-- __supportedAudioModes__: The audio recording formats supported by the device. (ConfigurationData[])
 
 - __supportedImageModes__: The recording image sizes and formats supported by the device. (ConfigurationData[])
 
 - __supportedVideoModes__: The recording video resolutions and formats supported by the device. (ConfigurationData[])
-
-## capture.captureAudio
-
-> Start the audio recorder application and return information about captured audio clip files.
-
-    navigator.device.capture.captureAudio(
-        CaptureCB captureSuccess, CaptureErrorCB captureError,  [CaptureAudioOptions options]
-    );
-
-### Description
-
-Starts an asynchronous operation to capture audio recordings using the
-device's default audio recording application.  The operation allows
-the device user to capture multiple recordings in a single session.
-
-The capture operation ends when either the user exits the audio
-recording application, or the maximum number of recordings specified
-by `CaptureAudioOptions.limit` is reached.  If no `limit` parameter
-value is specified, it defaults to one (1), and the capture operation
-terminates after the user records a single audio clip.
-
-When the capture operation finishes, the `CaptureCallback` executes
-with an array of `MediaFile` objects describing each captured audio
-clip file.  If the user terminates the operation before an audio clip
-is captured, the `CaptureErrorCallback` executes with a `CaptureError`
-object, featuring the `CaptureError.CAPTURE_NO_MEDIA_FILES` error
-code.
-
-### Supported Platforms
-
-- Android
-- iOS
-- Windows
-
-### Example
-
-    // capture callback
-    var captureSuccess = function(mediaFiles) {
-        var i, path, len;
-        for (i = 0, len = mediaFiles.length; i < len; i += 1) {
-            path = mediaFiles[i].fullPath;
-            // do something interesting with the file
-        }
-    };
-
-    // capture error callback
-    var captureError = function(error) {
-        navigator.notification.alert('Error code: ' + error.code, null, 'Capture Error');
-    };
-
-    // start audio capture
-    navigator.device.capture.captureAudio(captureSuccess, captureError, {limit:2});
-
-### iOS Quirks
-
-- iOS does not have a default audio recording application, so a simple user interface is provided.
-
-### Windows Phone 7 and 8 Quirks
-
-- Windows Phone 7 does not have a default audio recording application, so a simple user interface is provided.
 
 ## capture.captureImage
 
@@ -180,7 +117,6 @@ object featuring a `CaptureError.CAPTURE_NO_MEDIA_FILES` error code.
 - Android
 - Browser
 - iOS
-- Windows
 
 ### iOS Quirks
 
@@ -272,7 +208,6 @@ capturing a video clip, the `CaptureErrorCB` callback executes with a
 
 - Android
 - iOS
-- Windows
 
 ### Example
 
@@ -293,33 +228,6 @@ capturing a video clip, the `CaptureErrorCB` callback executes with a
     // start video capture
     navigator.device.capture.captureVideo(captureSuccess, captureError, {limit:2});
 
-
-
-## CaptureAudioOptions
-
-> Encapsulates audio capture configuration options.
-
-### Properties
-
-- __limit__: The maximum number of audio clips the device user can record in a single capture operation.  The value must be greater than or equal to 1 (defaults to 1).
-
-- __duration__: The maximum duration of an audio sound clip, in seconds.
-
-### Example
-
-    // limit capture operation to 3 media files, no longer than 10 seconds each
-    var options = { limit: 3, duration: 10 };
-
-    navigator.device.capture.captureAudio(captureSuccess, captureError, options);
-
-### Android Quirks
-
-- The `duration` parameter is not supported.  Recording lengths can't be limited programmatically.
-
-
-### iOS Quirks
-
-- The `limit` parameter is not supported, so only one recording can be created for each invocation.
 
 
 ## CaptureImageOptions
@@ -349,8 +257,19 @@ capturing a video clip, the `CaptureErrorCB` callback executes with a
 ### Properties
 
 - __limit__: The maximum number of video clips the device's user can capture in a single capture operation.  The value must be greater than or equal to 1 (defaults to 1).
-
 - __duration__: The maximum duration of a video clip, in seconds.
+- __is_front__: "1" or "true" is front camera, default is back camera. 
+- __optimizeForNetworkUse__: default is true, only for IOS
+- __saveToPhotoAlbum__: default is true
+- __maintainAspectRatio__: default is true, only for IOS, android always is true.
+- __width__: default is 0, use the camera's default setting
+- __height__: default is 0, use the camera's default setting
+- __videoBitrate__: default is 1920*1080
+- __audioChannels__: default is 2
+- __audioSampleRate__: default is 44100
+- __audioBitrate__: default is 64*1024
+- __videoFrameRate__: default is 24, only android
+
 
 ### Example
 

@@ -306,7 +306,8 @@ public class CtyVideoCaptureHelper {
       iwidth = cfgOption.height * iwidth  / iheight   ;
       iheight = cfgOption.height;
     }
-
+    iwidth = iwidth + iwidth % 2;
+    iheight = iheight + iheight % 2;
     mMediaRecorder.setVideoSize(iwidth,iheight); //760,360
     mMediaRecorder.setOrientationHint(90);
     Surface surface = new Surface(mTextureView.getSurfaceTexture());

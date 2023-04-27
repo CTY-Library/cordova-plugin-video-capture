@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-video-capture",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Cordova video Capture Plugin",
   "types": "./types/index.d.ts",
   "cordova": {

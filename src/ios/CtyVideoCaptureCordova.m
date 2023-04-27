@@ -227,7 +227,7 @@
     [pickerController stopVideoCapture];
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK  messageAsString:@"true" ];
     [self.commandDelegate sendPluginResult:result  callbackId:command.callbackId ];
-
+    [self.webView.superview  willRemoveSubview: pickerController.view ];
 }
 
 - (void)captureVideo:(CDVInvokedUrlCommand*)command

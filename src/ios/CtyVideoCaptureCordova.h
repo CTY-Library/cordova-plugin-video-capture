@@ -45,7 +45,7 @@ typedef NSUInteger CDVCaptureError;
 @property (copy)   NSString* mimeType;
 @end
 
-@interface CDVCapture : CDVPlugin <UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@interface CtyVideoCaptureCordova : CDVPlugin <UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 {
     CDVImagePicker* pickerController;
     BOOL inUse;
@@ -82,7 +82,7 @@ typedef NSUInteger CDVCaptureError;
     CDVCaptureError errorCode;
     NSString* callbackId;
     NSNumber* duration;
-    CDVCapture* captureCommand;
+    CtyVideoCaptureCordova* captureCommand;
     UIBarButtonItem* doneButton;
     UIView* recordingView;
     UIButton* recordButton;
@@ -98,7 +98,7 @@ typedef NSUInteger CDVCaptureError;
 @property (nonatomic) CDVCaptureError errorCode;
 @property (nonatomic, copy) NSString* callbackId;
 @property (nonatomic, copy) NSNumber* duration;
-@property (nonatomic, strong) CDVCapture* captureCommand;
+@property (nonatomic, strong) CtyVideoCaptureCordova* captureCommand;
 @property (nonatomic, strong) UIBarButtonItem* doneButton;
 @property (nonatomic, strong) UIView* recordingView;
 @property (nonatomic, strong) UIButton* recordButton;

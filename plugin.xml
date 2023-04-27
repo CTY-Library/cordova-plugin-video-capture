@@ -97,9 +97,9 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         <source-file src="src/ios/CtyVideoTranscode.m" />
         <header-file src="src/ios/CtyAVAssetExportSession.h" />
         <source-file src="src/ios/CtyAVAssetExportSession.m" />
-        <header-file src="src/ios/CDVCapture.h" />
-        <source-file src="src/ios/CDVCapture.m" />
-        <resource-file src="src/ios/CDVCapture.bundle" />
+        <header-file src="src/ios/CtyVideoCaptureCordova.h" />
+        <source-file src="src/ios/CtyVideoCaptureCordova.m" />
+        <resource-file src="src/ios/CtyVideoCaptureCordova.bundle" />
 
         <framework src="CoreGraphics.framework" />
         <framework src="MobileCoreServices.framework" />        

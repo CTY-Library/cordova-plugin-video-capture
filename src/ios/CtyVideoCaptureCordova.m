@@ -17,7 +17,7 @@
  under the License.
  */
 
-#import "CDVCapture.h"
+#import "CtyVideoCaptureCordova.h"
 #import "CDVFile.h"
 #import <Cordova/CDVAvailability.h>
 
@@ -77,7 +77,7 @@
 
 @end
 
-@implementation CDVCapture
+@implementation CtyVideoCaptureCordova
 @synthesize inUse;
 
 - (void)pluginInitialize
@@ -690,7 +690,7 @@
     BOOL isLessThaniOS4 = ([systemVersion compare:@"4.0" options:NSNumericSearch] == NSOrderedAscending);
 
     // the iPad image (nor retina) differentiation code was not in 3.x, and we have to explicitly set the path
-    // if user wants iPhone only app to run on iPad they must remove *~ipad.* images from CDVCapture.bundle
+    // if user wants iPhone only app to run on iPad they must remove *~ipad.* images from CtyVideoCaptureCordova.bundle
     if (isLessThaniOS4) {
         NSString* iPadResource = [NSString stringWithFormat:@"%@~ipad.png", resource];
         if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad && [UIImage imageNamed:iPadResource]) {
@@ -703,7 +703,7 @@
     return resource;
 }
 
-- (id)initWithCommand:(CDVCapture*)theCommand duration:(NSNumber*)theDuration callbackId:(NSString*)theCallbackId
+- (id)initWithCommand:(CtyVideoCaptureCordova*)theCommand duration:(NSNumber*)theDuration callbackId:(NSString*)theCallbackId
 {
     if ((self = [super init])) {
         self.captureCommand = theCommand;
@@ -730,14 +730,14 @@
     UIView* tmp = [[UIView alloc] initWithFrame:viewRect];
 
     // make backgrounds
-    NSString* microphoneResource = @"CDVCapture.bundle/microphone";
+    NSString* microphoneResource = @"CtyVideoCaptureCordova.bundle/microphone";
 
     BOOL isIphone5 = ([[UIScreen mainScreen] bounds].size.width == 568 && [[UIScreen mainScreen] bounds].size.height == 320) || ([[UIScreen mainScreen] bounds].size.height == 568 && [[UIScreen mainScreen] bounds].size.width == 320);
     if (isIphone5) {
-        microphoneResource = @"CDVCapture.bundle/microphone-568h";
+        microphoneResource = @"CtyVideoCaptureCordova.bundle/microphone-568h";
     }
 
-    NSBundle* cdvBundle = [NSBundle bundleForClass:[CDVCapture class]];
+    NSBundle* cdvBundle = [NSBundle bundleForClass:[CtyVideoCaptureCordova class]];
     UIImage* microphone = [UIImage imageNamed:[self resolveImageResource:microphoneResource] inBundle:cdvBundle compatibleWithTraitCollection:nil];
     UIView* microphoneView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, viewRect.size.width, microphone.size.height)];
     [microphoneView setBackgroundColor:[UIColor colorWithPatternImage:microphone]];
@@ -746,7 +746,7 @@
     [tmp addSubview:microphoneView];
 
     // add bottom bar view
-    UIImage* grayBkg = [UIImage imageNamed:[self resolveImageResource:@"CDVCapture.bundle/controls_bg"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
+    UIImage* grayBkg = [UIImage imageNamed:[self resolveImageResource:@"CtyVideoCaptureCordova.bundle/controls_bg"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
     UIView* controls = [[UIView alloc] initWithFrame:CGRectMake(0, microphone.size.height, viewRect.size.width, grayBkg.size.height)];
     [controls setBackgroundColor:[UIColor colorWithPatternImage:grayBkg]];
     [controls setUserInteractionEnabled:NO];
@@ -754,7 +754,7 @@
     [tmp addSubview:controls];
 
     // make red recording background view
-    UIImage* recordingBkg = [UIImage imageNamed:[self resolveImageResource:@"CDVCapture.bundle/recording_bg"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
+    UIImage* recordingBkg = [UIImage imageNamed:[self resolveImageResource:@"CtyVideoCaptureCordova.bundle/recording_bg"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
     UIColor* background = [UIColor colorWithPatternImage:recordingBkg];
     self.recordingView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, viewRect.size.width, recordingBkg.size.height)];
     [self.recordingView setBackgroundColor:background];
@@ -777,8 +777,8 @@
 
     // Add record button
 
-    self.recordImage = [UIImage imageNamed:[self resolveImageResource:@"CDVCapture.bundle/record_button"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
-    self.stopRecordImage = [UIImage imageNamed:[self resolveImageResource:@"CDVCapture.bundle/stop_button"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
+    self.recordImage = [UIImage imageNamed:[self resolveImageResource:@"CtyVideoCaptureCordova.bundle/record_button"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
+    self.stopRecordImage = [UIImage imageNamed:[self resolveImageResource:@"CtyVideoCaptureCordova.bundle/stop_button"] inBundle:cdvBundle compatibleWithTraitCollection:nil];
     self.recordButton.accessibilityTraits |= [self accessibilityTraits];
     self.recordButton = [[UIButton alloc] initWithFrame:CGRectMake((viewRect.size.width - recordImage.size.width) / 2, (microphone.size.height + (grayBkg.size.height - recordImage.size.height) / 2), recordImage.size.width, recordImage.size.height)];
     [self.recordButton setAccessibilityLabel:PluginLocalizedString(captureCommand, @"toggle audio recording", nil)];

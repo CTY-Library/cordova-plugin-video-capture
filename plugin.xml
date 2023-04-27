@@ -90,7 +90,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
     <platform name="ios">
         <config-file target="config.xml" parent="/*">
             <feature name="CtyVideoCaptureCordova">
-                <param name="ios-package" value="CDVCapture" />
+                <param name="ios-package" value="CtyVideoCaptureCordova" />
             </feature>
         </config-file>
         <header-file src="src/ios/CtyVideoTranscode.h" />

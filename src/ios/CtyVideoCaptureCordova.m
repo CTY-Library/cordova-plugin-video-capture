@@ -227,7 +227,10 @@
     [pickerController stopVideoCapture];
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK  messageAsString:@"true" ];
     [self.commandDelegate sendPluginResult:result  callbackId:command.callbackId ];
-    [self.webView.superview  willRemoveSubview: pickerController.view ];
+    
+
+    
+
 }
 
 - (void)captureVideo:(CDVInvokedUrlCommand*)command
@@ -244,6 +247,8 @@
     NSNumber* duration = [options objectForKey:@"duration"];
     NSString* is_front = [options objectForKey:@"is_front"]; // "1" or "true"  前置摄像头
     NSString* mediaType = nil;
+    float width = [[options objectForKey:@"width"] floatValue];
+    float height =  [[options objectForKey:@"height"] floatValue];
 
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         // there is a camera, it is available, make sure it can do movies
@@ -299,9 +304,62 @@
         // iOS 4.0
         if ([pickerController respondsToSelector:@selector(cameraCaptureMode)]) {
             pickerController.cameraCaptureMode = UIImagePickerControllerCameraCaptureModeVideo;
-            // pickerController.videoQuality = UIImagePickerControllerQualityTypeHigh;
+            //pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame1280x720;// UIImagePickerControllerQualityTypeHigh;
             // pickerController.cameraDevice = UIImagePickerControllerCameraDeviceRear;
             // pickerController.cameraFlashMode = UIImagePickerControllerCameraFlashModeAuto;
+            
+            
+//            UIImagePickerControllerQualityTypeHigh = 0,       // highest quality
+//            UIImagePickerControllerQualityTypeMedium = 1,     // medium quality, suitable for transmission via Wi-Fi
+//            UIImagePickerControllerQualityTypeLow = 2,         // lowest quality, suitable for transmission via cellular network
+//            UIImagePickerControllerQualityType640x480 API_AVAILABLE(ios(4.0)) = 3,    // VGA quality
+//            UIImagePickerControllerQualityTypeIFrame1280x720 API_AVAILABLE(ios(5.0)) = 4,
+//            UIImagePickerControllerQualityTypeIFrame960x540 API_AVAILABLE(ios(5.0)) = 5,
+            if(width>0) {
+                if(width<=192){
+                    pickerController.videoQuality =UIImagePickerControllerQualityTypeLow;
+                }
+                else if(width<=480){
+                    pickerController.videoQuality =UIImagePickerControllerQualityTypeMedium;
+                }
+                else if(width<=640){
+                    pickerController.videoQuality =UIImagePickerControllerQualityType640x480;
+                }
+                else if(width<=960){
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame960x540;
+                }
+                else if(width<=1280){
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame1280x720;
+                }
+                else{
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeHigh;
+                }
+            }
+            else if (height > 0){
+                if(height<=144){
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeLow;
+                }
+                else  if(height<=360){
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeMedium;
+                }
+                else  if(height<=480){
+                    pickerController.videoQuality = UIImagePickerControllerQualityType640x480;
+                }
+                else  if(height<=540){
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame960x540;
+                }
+                else  if(height<=720){
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame1280x720;
+                }
+                else {
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeLow;
+                }
+                
+            }
+            else {
+                pickerController.videoQuality =  UIImagePickerControllerQualityTypeHigh;
+            }
+            
         }
         // CDVImagePicker specific property
         pickerController.callbackId = callbackId;
@@ -346,7 +404,7 @@
     transcode.optimizeForNetworkUse =  [self->cfgoptions objectForKey:@"optimizeForNetworkUse"];
     transcode.saveToPhotoAlbum =  [self->cfgoptions objectForKey:@"saveToPhotoAlbum"];
     transcode.maintainAspectRatio =  [self->cfgoptions objectForKey:@"maintainAspectRatio"];
-    transcode.width =  [[self->cfgoptions objectForKey:@"width"] floatValue];
+    transcode.width = [[self->cfgoptions objectForKey:@"width"] floatValue];
     transcode.height =  [[self->cfgoptions objectForKey:@"height"] floatValue];
     transcode.videoBitrate =  [[self->cfgoptions objectForKey:@"videoBitrate"] intValue];
     transcode.audioChannels =  [[self->cfgoptions objectForKey:@"audioChannels"] intValue];

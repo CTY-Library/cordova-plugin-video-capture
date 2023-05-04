@@ -49,6 +49,11 @@ public class CtyVideoConfigOption {
         optimizeForNetworkUse =  options.has("optimizeForNetworkUse") ?options.getBoolean("optimizeForNetworkUse"): optimizeForNetworkUse;
         outputFileType =  options.has("outputFileType") ?options.getInt("outputFileType"): outputFileType;
         
+        if((width==1280 || width==0) && height==0){
+            //https://stackoverflow.com/questions/46997776/camera2-api-error-failed-to-create-capture-session
+            width = 800;
+            height = 600;
+        }
 
         if(videoBitrate<=0){
             videoBitrate = 1 * 1080 * 1920;
@@ -67,10 +72,6 @@ public class CtyVideoConfigOption {
         }
     }
 
-
-    public  CtyVideoConfigOption(int height,int width,int duration, CallbackContext callbackContext){
-
-      this.callbackContext= callbackContext;
-    }
+ 
 }
 

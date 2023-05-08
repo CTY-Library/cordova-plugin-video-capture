@@ -322,15 +322,16 @@
                 else if(width<=480){
                     pickerController.videoQuality =UIImagePickerControllerQualityTypeMedium;
                 }
-                else if(width<=640){
-                    pickerController.videoQuality =UIImagePickerControllerQualityType640x480;
-                }
-                else if(width<=960){
-                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame960x540;
-                }
-                else if(width<=1280){
-                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame1280x720;
-                }
+                //虽然分辨率低（下面注释的3种），但是生成的文件比UIImagePickerControllerQualityTypeHigh更大
+//                else if(width<=640){
+//                    pickerController.videoQuality =UIImagePickerControllerQualityType640x480;
+//                }
+//                else if(width<=960){
+//                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame960x540;
+//                }
+//                else if(width<=1280){
+//                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame1280x720;
+//                }
                 else{
                     pickerController.videoQuality = UIImagePickerControllerQualityTypeHigh;
                 }
@@ -342,17 +343,18 @@
                 else  if(height<=360){
                     pickerController.videoQuality = UIImagePickerControllerQualityTypeMedium;
                 }
-                else  if(height<=480){
-                    pickerController.videoQuality = UIImagePickerControllerQualityType640x480;
-                }
-                else  if(height<=540){
-                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame960x540;
-                }
-                else  if(height<=720){
-                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame1280x720;
-                }
+                //虽然分辨率低（下面注释的3种），但是生成的文件比UIImagePickerControllerQualityTypeHigh更大
+//                else  if(height<=480){
+//                    pickerController.videoQuality = UIImagePickerControllerQualityType640x480;
+//                }
+//                else  if(height<=540){
+//                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame960x540;
+//                }
+//                else  if(height<=720){
+//                    pickerController.videoQuality = UIImagePickerControllerQualityTypeIFrame1280x720;
+//                }
                 else {
-                    pickerController.videoQuality = UIImagePickerControllerQualityTypeLow;
+                    pickerController.videoQuality = UIImagePickerControllerQualityTypeHigh;
                 }
                 
             }

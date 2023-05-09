@@ -23,7 +23,7 @@ var exec = require('cordova/exec');
 
 
 var CtyVideoCaptureCordova = {
-    //悬浮播放视频  
+    //录制视频  
     captureVideo: function(
         success,
         error,

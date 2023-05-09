@@ -299,10 +299,12 @@ public class CtyVideoCaptureHelper {
       iheight = cfgOption.height;
     }
     else if(cfgOption.width>0){
+      cfgOption.width = cfgOption.width > iwidth ? iwidth : cfgOption.width;
       iheight = cfgOption.width * iheight /  iwidth  ;
       iwidth = cfgOption.width;
     }
     else if(cfgOption.height>0){
+      cfgOption.height = cfgOption.height > iheight ? iheight : cfgOption.height;
       iwidth = cfgOption.height * iwidth  / iheight   ;
       iheight = cfgOption.height;
     }

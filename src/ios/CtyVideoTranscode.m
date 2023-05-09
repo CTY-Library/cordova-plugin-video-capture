@@ -110,25 +110,41 @@
     float videoHeight = mediaSize.height;
     int newWidth;
     int newHeight;
-
-    if (self.maintainAspectRatio) {
-        float aspectRatio = videoWidth / videoHeight;
-
-        // for some portrait videos ios gives the wrong width and height, this fixes that
-        NSString *videoOrientation = [self getOrientationForTrack:avAsset];
-        if ([videoOrientation isEqual: @"portrait"]) {
-            if (videoWidth > videoHeight) {
-                videoWidth = mediaSize.height;
-                videoHeight = mediaSize.width;
-                aspectRatio = videoWidth / videoHeight;
-            }
+    float aspectRatio = videoWidth / videoHeight;
+    // for some portrait videos ios gives the wrong width and height, this fixes that
+    NSString *videoOrientation = [self getOrientationForTrack:avAsset];
+    if ([videoOrientation isEqual: @"portrait"]) {
+        if (videoWidth > videoHeight) {
+            videoWidth = mediaSize.height;
+            videoHeight = mediaSize.width;
+            aspectRatio = videoWidth / videoHeight;
         }
+    }
 
-        newWidth = (self.width && self.height) ? self.height * aspectRatio : videoWidth;
-        newHeight = (self.width && self.height) ? newWidth / aspectRatio : videoHeight;
-    } else {
-        newWidth = (self.width && self.height) ? self.width : videoWidth;
-        newHeight = (self.width && self.height) ? self.height : videoHeight;
+    if (self.maintainAspectRatio) {    
+        if(self.width >0 && self.height >0){
+           self.width = 0; 
+        }
+        
+    }
+
+    if(self.width >0 && self.height >0){
+        newWidth = self.width;
+        newHeight = self.height;
+    }
+    else if(self.width >0){     
+        self.width = self.width > videoWidth ? videoWidth : self.width;
+        newHeight = self.width / aspectRatio;
+        newWidth = self.width;
+    }
+    else if(self.height >0){
+       self.height = self.height > videoHeight ? videoHeight : self.height;
+       newWidth = self.height * aspectRatio;
+       newHeight = self.height;
+    }
+    else{
+        newWidth = videoWidth;
+        newHeight = videoHeight;
     }
 
     NSLog(@"input videoWidth: %f", videoWidth);
@@ -142,7 +158,7 @@
     encoder.shouldOptimizeForNetworkUse = self.optimizeForNetworkUse;
     encoder.videoSettings = @
     {
-        AVVideoCodecKey: AVVideoCodecH264,
+        AVVideoCodecKey: AVVideoCodecTypeH264,
         AVVideoWidthKey: [NSNumber numberWithInt: newWidth],
         AVVideoHeightKey: [NSNumber numberWithInt: newHeight],
         AVVideoCompressionPropertiesKey: @

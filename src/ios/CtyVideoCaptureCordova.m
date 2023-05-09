@@ -403,9 +403,27 @@
     CFRelease(uuidObj);
     
      
-    transcode.optimizeForNetworkUse =  [self->cfgoptions objectForKey:@"optimizeForNetworkUse"];
-    transcode.saveToPhotoAlbum =  [self->cfgoptions objectForKey:@"saveToPhotoAlbum"];
-    transcode.maintainAspectRatio =  [self->cfgoptions objectForKey:@"maintainAspectRatio"];
+    //压缩
+    if([self->cfgoptions objectForKey:@"optimizeForNetworkUse"]){
+        transcode.optimizeForNetworkUse =  [[self->cfgoptions objectForKey:@"optimizeForNetworkUse"] boolValue];
+    }
+    else{
+        transcode.optimizeForNetworkUse =  NO;
+    }
+    //保存相册
+    if([self->cfgoptions objectForKey:@"saveToPhotoAlbum"]){
+        transcode.saveToPhotoAlbum =  [[self->cfgoptions objectForKey:@"saveToPhotoAlbum"] boolValue];
+    }
+    else{
+        transcode.saveToPhotoAlbum = YES;
+    }
+    //保持长宽比不变
+    if([self->cfgoptions objectForKey:@"maintainAspectRatio"]){
+        transcode.maintainAspectRatio =  [[self->cfgoptions objectForKey:@"maintainAspectRatio"] boolValue];
+    }else{
+        transcode.maintainAspectRatio = YES;
+    }
+
     transcode.width = [[self->cfgoptions objectForKey:@"width"] floatValue];
     transcode.height =  [[self->cfgoptions objectForKey:@"height"] floatValue];
     transcode.videoBitrate =  [[self->cfgoptions objectForKey:@"videoBitrate"] intValue];

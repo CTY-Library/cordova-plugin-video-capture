@@ -294,6 +294,17 @@ public class CtyVideoCaptureHelper {
       iheight = 1920;
     }
 
+    if(cfgOption.maintainAspectRatio){
+      if(cfgOption.width>0 && cfgOption.height>0 ) {
+        if(iwidth > iheight){
+          cfgOption.height = 0;
+        }
+        else {
+          cfgOption.width = 0;
+        }
+      }
+    }
+
     if(cfgOption.width>0 && cfgOption.height>0 ){
       iwidth = cfgOption.width;
       iheight = cfgOption.height;
@@ -311,7 +322,7 @@ public class CtyVideoCaptureHelper {
     iwidth = iwidth + iwidth % 2;
     iheight = iheight + iheight % 2;
     mMediaRecorder.setVideoSize(iwidth,iheight); //760,360
-    mMediaRecorder.setOrientationHint(90);
+    mMediaRecorder.setOrientationHint(270);
     Surface surface = new Surface(mTextureView.getSurfaceTexture());
     mMediaRecorder.setPreviewDisplay(surface);
     mMediaRecorder.setOutputFile(mCurrentFile.getAbsolutePath());

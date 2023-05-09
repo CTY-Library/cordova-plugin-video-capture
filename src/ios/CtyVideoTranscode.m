@@ -123,9 +123,13 @@
 
     if (self.maintainAspectRatio) {    
         if(self.width >0 && self.height >0){
-           self.width = 0; 
-        }
-        
+           if(videoWidth > videoHeight ){
+            self.height = 0;
+           }
+           else{
+            self.width = 0;
+           }
+        }        
     }
 
     if(self.width >0 && self.height >0){

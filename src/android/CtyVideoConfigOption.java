@@ -17,7 +17,7 @@ public class CtyVideoConfigOption {
     public int outputFileType = 1;  // 1 : mp4 , 2 : mov
     public boolean optimizeForNetworkUse = true; //only ios 压缩
     public boolean saveToPhotoAlbum = true; //only ios 保存到相册, 安卓还未实现   //todo android
-    public boolean maintainAspectRatio = true; //  保持长宽比不变  //todo android
+    public boolean maintainAspectRatio = true; //  保持长宽比不变  
 
     public int width = 0;
     public int height = 0;

@@ -322,7 +322,7 @@ public class CtyVideoCaptureHelper {
     iwidth = iwidth + iwidth % 2;
     iheight = iheight + iheight % 2;
     mMediaRecorder.setVideoSize(iwidth,iheight); //760,360
-    mMediaRecorder.setOrientationHint(270);
+    mMediaRecorder.setOrientationHint(90);
     Surface surface = new Surface(mTextureView.getSurfaceTexture());
     mMediaRecorder.setPreviewDisplay(surface);
     mMediaRecorder.setOutputFile(mCurrentFile.getAbsolutePath());

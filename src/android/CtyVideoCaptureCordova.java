@@ -214,13 +214,15 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
     public static final String FILENAME_FORMAT = "yyyyMMdd_HHmmss_SSS";
     public static final int REQUEST_CODE_PERMISSIONS = 10;
     public static final int REQUEST_AUDIO_CODE_PERMISSIONS = 12;
-    public static final String[] REQUIRED_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+    // Android 13+ (API 33+): WRITE_EXTERNAL_STORAGE no longer grants media access.
+    // For video capture we only need CAMERA and RECORD_AUDIO.
+    // Writing to the app's own directory doesn't require external storage permission.
+    public static final String[] REQUIRED_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
       ? new String[] { Manifest.permission.CAMERA,
-      Manifest.permission.RECORD_AUDIO,
-      Manifest.permission.WRITE_EXTERNAL_STORAGE
-    }
+      Manifest.permission.RECORD_AUDIO }
       : new String[] { Manifest.permission.CAMERA,
-      Manifest.permission.RECORD_AUDIO };
+      Manifest.permission.RECORD_AUDIO,
+      Manifest.permission.WRITE_EXTERNAL_STORAGE };
 
     public static File CreateFile(boolean saveToPhotoAlbum, Context context, String extension) {
       String outputFileName = new SimpleDateFormat(Configuration.FILENAME_FORMAT).format(new Date());

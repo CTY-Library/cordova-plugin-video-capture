@@ -21,7 +21,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
 xmlns:android="http://schemas.android.com/apk/res/android"
            id="cordova-plugin-video-capture"
-      version="1.1.3">
+      version="1.2.0">
     <name>CtyVideoCaptureCordova</name>
 
     <description>Cordova video Capture Plugin</description>
@@ -60,6 +60,8 @@ xmlns:android="http://schemas.android.com/apk/res/android"
             <uses-permission android:name="android.permission.RECORD_AUDIO" />
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+  	    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+            <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
         </config-file>
 
         <source-file src="src/android/CtyVideoCaptureCordova.java" target-dir="src/com/cty/CtyVideoCapture" />

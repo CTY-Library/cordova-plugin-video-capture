@@ -91,24 +91,32 @@ public class CtyVideoCaptureFragment extends Fragment {
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
                            Bundle savedInstanceState) {
-    appResourcesPackage = getActivity().getPackageName();
-    // Inflate the layout for this fragment
-    int pageViewId=getResources().getIdentifier("camera2_capture_activity","layout",appResourcesPackage);
-    mPageView = inflater.inflate(pageViewId, container, false);
-    // mPageView = inflater.inflate(R.layout.camera2_capture_fragment, container, false);
-    mActivity = getActivity();
-    if (mActivity != null) {
-      mActivity.getWindow().setFlags(
-        WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-        WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);//硬件加速
-      mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//保持常亮
-      mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);//全屏，包含系统状态栏
-    }
+    try {
+      appResourcesPackage = getActivity().getPackageName();
+      // Inflate the layout for this fragment
+      int pageViewId = getResources().getIdentifier("camera2_capture_activity", "layout", appResourcesPackage);
+      mPageView = inflater.inflate(pageViewId, container, false);
+      // mPageView = inflater.inflate(R.layout.camera2_capture_fragment, container, false);
+      mActivity = getActivity();
+      if (mActivity != null) {
+        mActivity.getWindow().setFlags(
+          WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+          WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);//硬件加速
+        mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//保持常亮
+        mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);//全屏，包含系统状态栏
+      }
 
-    int textureViewId=getResources().getIdentifier("camera2_capture_container","id",appResourcesPackage);
-    mTextureView = mPageView.findViewById(textureViewId);
-    CtyVideoCaptureHelper = new CtyVideoCaptureHelper(getActivity(), mTextureView, getResources().getDisplayMetrics(),cfgOption);
-    initBrightness();
+      int textureViewId = getResources().getIdentifier("camera2_capture_container", "id", appResourcesPackage);
+      mTextureView = mPageView.findViewById(textureViewId);
+      CtyVideoCaptureHelper = new CtyVideoCaptureHelper(getActivity(), mTextureView, getResources().getDisplayMetrics(), cfgOption);
+      initBrightness();
+    } catch (SecurityException e) {
+      android.util.Log.e("CtyVideoCaptureFragment", "SecurityException: " + e.getMessage(), e);
+      e.printStackTrace();
+    } catch (Exception e) {
+      android.util.Log.e("CtyVideoCaptureFragment", "初始化异常: " + e.getMessage(), e);
+      e.printStackTrace();
+    }
     return mPageView;
   }
 
@@ -120,9 +128,14 @@ public class CtyVideoCaptureFragment extends Fragment {
     if (mActivity == null) {
       mActivity = getActivity();
     }
-    int brightness = BrightnessTools.getScreenBrightness(mActivity);
-    if (brightness < 200) {
-      BrightnessTools.setBrightness(mActivity, 200);
+    try {
+      int brightness = BrightnessTools.getScreenBrightness(mActivity);
+      if (brightness < 200) {
+        BrightnessTools.setBrightness(mActivity, 200);
+      }
+    } catch (Exception e) {
+      // 处理权限或系统限制导致的异常
+      android.util.Log.w("BrightnessTools", "亮度设置失败: " + e.getMessage());
     }
   }
 

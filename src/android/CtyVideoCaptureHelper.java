@@ -520,6 +520,17 @@ public class CtyVideoCaptureHelper {
    * 暂停录制视频（暂停后视频文件会自动保存）
    */
   public void stopRecorder() throws JSONException {
+    stopRecorderInternal(false);
+  }
+
+  /**
+   * 停止录制并关闭相机预览。
+   */
+  public void stopRecorderAndCloseCamera() throws JSONException {
+    stopRecorderInternal(true);
+  }
+
+  private void stopRecorderInternal(final boolean closeCameraAfterStop) throws JSONException {
     if (mChildHandler == null) {
       Log.e(TAG, "stopRecorder: 相机线程未初始化");
       return;
@@ -565,7 +576,9 @@ public class CtyVideoCaptureHelper {
         }
         releaseRecorderSurfaces();
 
-        if (mCameraDevice != null) {
+        if (closeCameraAfterStop) {
+          releaseCamera();
+        } else if (mCameraDevice != null) {
           initCameraPreview();
         }
 
@@ -584,7 +597,6 @@ public class CtyVideoCaptureHelper {
         }
       }
     });
-
   }
 
   /**

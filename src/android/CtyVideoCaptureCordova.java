@@ -1,4 +1,4 @@
-package com.cty.CtyVideoCapture;
+ package com.cty.CtyVideoCapture;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
@@ -224,9 +224,48 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
       callbackContext.error("请先执行init进行初始化");
       return;
     }
-   mCtyVideoCaptureFragment.CtyVideoCaptureHelper.stopRecorder();
-   callbackContext.success("success");
+    mCtyVideoCaptureFragment.CtyVideoCaptureHelper.stopRecorderAndCloseCamera();
+    dismissCaptureUi();
+    callbackContext.success("success");
 
+  }
+
+  private void dismissCaptureUi() {
+    final Activity activity = cordova.getActivity();
+    if (activity == null) {
+      return;
+    }
+
+    activity.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          FragmentManager fragmentManager = activity.getFragmentManager();
+          if (mCtyVideoCaptureFragment != null && mCtyVideoCaptureFragment.isAdded()) {
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.remove(mCtyVideoCaptureFragment);
+            fragmentTransaction.commitAllowingStateLoss();
+          }
+          mCtyVideoCaptureFragment = null;
+
+          View containerView = activity.findViewById(containerViewId);
+          if (containerView != null) {
+            ViewParent parent = containerView.getParent();
+            if (parent instanceof ViewGroup) {
+              ((ViewGroup) parent).removeView(containerView);
+            }
+          }
+
+          View webViewRoot = webView != null ? webView.getView() : null;
+          if (webViewRoot != null) {
+            webViewRoot.bringToFront();
+            webViewRoot.setVisibility(View.VISIBLE);
+          }
+        } catch (Exception e) {
+          Log.e("CtyVideoCapture", "dismissCaptureUi 失败: " + e.getMessage(), e);
+        }
+      }
+    });
   }
 
 

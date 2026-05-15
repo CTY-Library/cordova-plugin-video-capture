@@ -217,24 +217,104 @@
 
 - (void)startVideoCapture:(CDVInvokedUrlCommand*)command
 {
-   Boolean is_start = [pickerController startVideoCapture];
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"%d",is_start ]];
-    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId ];
+    NSLog(@"===== iOS startVideoCapture START =====");
+    
+    if (pickerController == nil) {
+        NSLog(@"startVideoCapture: pickerController 为空");
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"0"];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+        NSLog(@"===== iOS startVideoCapture END (pickerController为空) =====");
+        return;
+    }
+    
+    NSLog(@"startVideoCapture: 开始启动视频录制");
+    
+    Boolean is_start = NO;
+    
+    // 调用startVideoCapture如果存在
+    if ([pickerController respondsToSelector:@selector(startVideoCapture)]) {
+        NSLog(@"startVideoCapture: 调用 pickerController.startVideoCapture()");
+        is_start = [pickerController startVideoCapture];
+        NSLog(@"startVideoCapture: pickerController.startVideoCapture() 返回=%d", is_start);
+    } else {
+        NSLog(@"startVideoCapture: pickerController 不支持 startVideoCapture 方法");
+        is_start = NO;
+    }
+    
+    self.inUse = YES;
+    
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"%d", is_start]];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    
+    NSLog(@"===== iOS startVideoCapture END =====");
 }
 
 - (void)stopVideoCapture:(CDVInvokedUrlCommand*)command
 {
-    [pickerController stopVideoCapture];
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK  messageAsString:@"true" ];
-    [self.commandDelegate sendPluginResult:result  callbackId:command.callbackId ];
+    NSLog(@"===== iOS stopVideoCapture START =====");
     
-
+    if (pickerController == nil) {
+        NSLog(@"stopVideoCapture: pickerController 为空");
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+        NSLog(@"===== iOS stopVideoCapture END (pickerController为空) =====");
+        return;
+    }
     
-
+    NSLog(@"stopVideoCapture: 开始停止录制");
+    
+    // 调用stopVideoCapture如果存在
+    if ([pickerController respondsToSelector:@selector(stopVideoCapture)]) {
+        NSLog(@"stopVideoCapture: 调用 pickerController.stopVideoCapture()");
+        [pickerController stopVideoCapture];
+        NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成");
+    } else {
+        NSLog(@"stopVideoCapture: pickerController 不支持 stopVideoCapture 方法");
+    }
+    
+    NSLog(@"stopVideoCapture: 开始移除 pickerController");
+    
+    // 处理两种情况：presentViewController 和 addChildViewController
+    UIViewController* presentingViewController = [pickerController presentingViewController];
+    if (presentingViewController) {
+        NSLog(@"stopVideoCapture: 处理 presentViewController 情况");
+        NSLog(@"stopVideoCapture: 调用 dismissViewControllerAnimated");
+        [presentingViewController dismissViewControllerAnimated:YES completion:^{
+            NSLog(@"stopVideoCapture: dismiss 完成");
+        }];
+    } else {
+        NSLog(@"stopVideoCapture: 检查是否是 addChildViewController 情况");
+        // 检查是否有 parentViewController
+        if (pickerController.parentViewController) {
+            NSLog(@"stopVideoCapture: 处理 addChildViewController 情况，移除子视图");
+            [pickerController willMoveToParentViewController:nil];
+            [pickerController.view removeFromSuperview];
+            [pickerController removeFromParentViewController];
+            NSLog(@"stopVideoCapture: 子视图移除完成");
+        } else {
+            NSLog(@"stopVideoCapture: pickerController 既没有 presentingViewController 也没有 parentViewController");
+        }
+    }
+    
+    NSLog(@"stopVideoCapture: 释放 pickerController");
+    pickerController = nil;
+    self.inUse = NO;
+    
+    // 恢复 webView
+    NSLog(@"stopVideoCapture: 恢复 webView");
+    self.webView.opaque = YES;
+    self.webView.backgroundColor = [UIColor whiteColor];
+    
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    
+    NSLog(@"===== iOS stopVideoCapture END =====");
 }
 
 - (void)captureVideo:(CDVInvokedUrlCommand*)command
 {
+    NSLog(@"===== iOS captureVideo START =====");
+    
     NSString* callbackId = command.callbackId;
     NSDictionary* options = [command argumentAtIndex:0];
 
@@ -249,9 +329,12 @@
     NSString* mediaType = nil;
     float width = [[options objectForKey:@"width"] floatValue];
     float height =  [[options objectForKey:@"height"] floatValue];
+    
+    NSLog(@"captureVideo: duration=%@, is_front=%@, width=%.0f, height=%.0f", duration, is_front, width, height);
 
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         // there is a camera, it is available, make sure it can do movies
+        NSLog(@"captureVideo: 相机可用，创建 pickerController");
         pickerController = [[CDVImagePicker alloc] init];
         
         
@@ -277,7 +360,9 @@
         NSLog(@"Capture.captureVideo: video mode not available.");
         CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_NOT_SUPPORTED];
         [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+        NSLog(@"captureVideo: 清空 pickerController");
         pickerController = nil;
+        NSLog(@"===== iOS captureVideo END (video mode 不可用) =====");
     } else {
         [self showAlertIfAccessProhibited];
 
@@ -367,6 +452,7 @@
         pickerController.callbackId = callbackId;
         pickerController.modalPresentationStyle = UIModalPresentationCurrentContext;
      
+        NSLog(@"captureVideo: 将 pickerController 添加到 view hierarchy");
 //        [self.viewController presentViewController:pickerController animated:YES completion:nil];
         
         [self.viewController addChildViewController:pickerController];
@@ -374,6 +460,10 @@
         self.webView.backgroundColor = [UIColor clearColor];
         [self.webView.superview addSubview:pickerController.view];
         [self.webView.superview bringSubviewToFront:self.webView];
+        
+        NSLog(@"captureVideo: pickerController 显示完成");
+        self.inUse = YES;
+        NSLog(@"===== iOS captureVideo END (成功) =====");
         
     }
 }
@@ -695,10 +785,14 @@
  */
 - (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info
 {
+    NSLog(@"===== imagePickerController didFinishPickingMediaWithInfo START =====");
+    
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
-
+    
+    NSLog(@"didFinishPickingMediaWithInfo: 开始 dismiss picker");
     [[picker presentingViewController] dismissViewControllerAnimated:YES completion:nil];
+    NSLog(@"didFinishPickingMediaWithInfo: dismiss 完成");
 
     CDVPluginResult* result = nil;
 
@@ -715,31 +809,48 @@
     }
     if (image != nil) {
         // mediaType was image
+        NSLog(@"didFinishPickingMediaWithInfo: 处理图像");
         result = [self processImage:image type:cameraPicker.mimeType forCallbackId:callbackId];
     } else if ([mediaType isEqualToString:(NSString*)kUTTypeMovie]) {
         // process video
         NSString* moviePath = [(NSURL *)[info objectForKey:UIImagePickerControllerMediaURL] path];
+        NSLog(@"didFinishPickingMediaWithInfo: 处理视频，路径=%@", moviePath);
         if (moviePath) {
             result = [self processVideo:moviePath forCallbackId:callbackId];
         }
     }
     if (!result) {
+        NSLog(@"didFinishPickingMediaWithInfo: 结果为空，返回错误");
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_INTERNAL_ERR];
     }
     [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+    
+    NSLog(@"didFinishPickingMediaWithInfo: 释放 pickerController");
     pickerController = nil;
+    self.inUse = NO;
+    
+    NSLog(@"===== imagePickerController didFinishPickingMediaWithInfo END =====");
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController*)picker
 {
+    NSLog(@"===== imagePickerControllerDidCancel START =====");
+    
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
 
+    NSLog(@"imagePickerControllerDidCancel: 开始 dismiss picker");
     [[picker presentingViewController] dismissViewControllerAnimated:YES completion:nil];
+    NSLog(@"imagePickerControllerDidCancel: dismiss 完成");
 
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_NO_MEDIA_FILES];
     [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+    
+    NSLog(@"imagePickerControllerDidCancel: 释放 pickerController");
     pickerController = nil;
+    self.inUse = NO;
+    
+    NSLog(@"===== imagePickerControllerDidCancel END =====");
 }
 
 @end

@@ -6,6 +6,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -91,6 +92,7 @@ public class CtyVideoCaptureFragment extends Fragment {
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
                            Bundle savedInstanceState) {
+    Log.d("CtyVideoCapture", "===== CtyVideoCaptureFragment.onCreateView START =====");
     try {
       appResourcesPackage = getActivity().getPackageName();
       // Inflate the layout for this fragment
@@ -108,13 +110,16 @@ public class CtyVideoCaptureFragment extends Fragment {
 
       int textureViewId = getResources().getIdentifier("camera2_capture_container", "id", appResourcesPackage);
       mTextureView = mPageView.findViewById(textureViewId);
+      Log.d("CtyVideoCapture", "onCreateView: 开始创建 CtyVideoCaptureHelper");
       CtyVideoCaptureHelper = new CtyVideoCaptureHelper(getActivity(), mTextureView, getResources().getDisplayMetrics(), cfgOption);
+      Log.d("CtyVideoCapture", "onCreateView: CtyVideoCaptureHelper 创建成功");
       initBrightness();
+      Log.d("CtyVideoCapture", "===== CtyVideoCaptureFragment.onCreateView END =====");
     } catch (SecurityException e) {
-      android.util.Log.e("CtyVideoCaptureFragment", "SecurityException: " + e.getMessage(), e);
+      Log.e("CtyVideoCaptureFragment", "SecurityException: " + e.getMessage(), e);
       e.printStackTrace();
     } catch (Exception e) {
-      android.util.Log.e("CtyVideoCaptureFragment", "初始化异常: " + e.getMessage(), e);
+      Log.e("CtyVideoCaptureFragment", "初始化异常: " + e.getMessage(), e);
       e.printStackTrace();
     }
     return mPageView;
@@ -142,6 +147,9 @@ public class CtyVideoCaptureFragment extends Fragment {
   @Override
   public void onDestroy() {
     super.onDestroy();
+    Log.d("CtyVideoCapture", "===== CtyVideoCaptureFragment.onDestroy START =====");
+    Log.d("CtyVideoCapture", "onDestroy: 释放 HandlerThread");
     CtyVideoCaptureHelper.releaseThread();
+    Log.d("CtyVideoCapture", "===== CtyVideoCaptureFragment.onDestroy END =====");
   }
 }

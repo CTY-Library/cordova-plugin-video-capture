@@ -180,12 +180,15 @@ public class CtyVideoCaptureHelper {
       @Override
       public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         // 将相机枚举和打开放到子线程，避免阻塞界面首帧
+        Log.d(TAG, "TextureView.onSurfaceTextureAvailable: surface available, width=" + width + ", height=" + height);
         mChildHandler.post(new Runnable() {
           @Override
           public void run() {
+            Log.d(TAG, "onSurfaceTextureAvailable: 在相机线程中初始化相机");
             initCameraManager();
             selectCamera();
             openCamera();
+            Log.d(TAG, "onSurfaceTextureAvailable: 相机初始化完成");
           }
         });
 
@@ -200,16 +203,20 @@ public class CtyVideoCaptureHelper {
       @Override
       public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
         // 纹理销毁时把释放动作放到相机线程，避免和相机回调并发冲突
+        Log.d(TAG, "TextureView.onSurfaceTextureDestroyed: TextureView 纹理被销毁");
         if (mChildHandler != null) {
           mChildHandler.post(new Runnable() {
             @Override
             public void run() {
+              Log.d(TAG, "TextureView.onSurfaceTextureDestroyed: 在相机线程中释放相机");
               releaseCamera();
             }
           });
         } else {
+          Log.d(TAG, "TextureView.onSurfaceTextureDestroyed: 直接释放相机（Handler为空）");
           releaseCamera();
         }
+        Log.d(TAG, "TextureView.onSurfaceTextureDestroyed: 完成");
         return true;
       }
 
@@ -248,10 +255,7 @@ public class CtyVideoCaptureHelper {
    */
 
   private void initMediaRecorder() {
-    if (mMediaRecorder != null) {
-      mMediaRecorder.release();
-      mMediaRecorder = null;
-    }
+    releaseMediaRecorder();
     releaseRecorderSurfaces();
     mMediaRecorder = new MediaRecorder();
 
@@ -536,9 +540,11 @@ public class CtyVideoCaptureHelper {
       return;
     }
 
+    Log.d(TAG, "===== stopRecorderInternal START, closeCameraAfterStop=" + closeCameraAfterStop + " =====");
     mChildHandler.post(new Runnable() {
       @Override
       public void run() {
+        Log.d(TAG, "stopRecorderInternal: 在相机线程中执行");
         if (mTimer != null && timerOnRunning) {
           mTimer.cancel();
           mTimer = null;
@@ -554,46 +560,72 @@ public class CtyVideoCaptureHelper {
         try {
           if (mMediaRecorder != null && mRecorderStarted) {
             long recordDurationMs = SystemClock.elapsedRealtime() - mRecorderStartElapsedMs;
+            Log.d(TAG, "stopRecorderInternal: 录制时长=" + recordDurationMs + "ms");
             if (recordDurationMs < MIN_RECORDER_STOP_DURATION_MS) {
               shouldDiscardFile = true;
               Log.w(TAG, "录制时长过短，跳过 stop。durationMs=" + recordDurationMs);
             } else {
+              Log.d(TAG, "stopRecorderInternal: 调用 mMediaRecorder.stop()");
               mMediaRecorder.stop();
+              Log.d(TAG, "stopRecorderInternal: mMediaRecorder.stop() 成功");
               stopSucceeded = true;
             }
+          } else {
+            Log.d(TAG, "stopRecorderInternal: 未在录制或 MediaRecorder 为空");
           }
         } catch (Exception e) {
           shouldDiscardFile = true;
           Log.e(TAG, "停止视频时发生异常", e);
           if (mMediaRecorder != null) {
-            mMediaRecorder.reset();
+            try {
+              mMediaRecorder.reset();
+            } catch (Exception e2) {
+              Log.e(TAG, "stopRecorderInternal: 异常中重置 MediaRecorder 失败", e2);
+            }
           }
         }
         mRecorderStarted = false;
         mRecorderStartElapsedMs = 0L;
+        Log.d(TAG, "stopRecorderInternal: 准备释放资源");
         if (mMediaRecorder != null) {
-          mMediaRecorder.reset();
+          try {
+            Log.d(TAG, "stopRecorderInternal: 重置 MediaRecorder");
+            mMediaRecorder.reset();
+            Log.d(TAG, "stopRecorderInternal: MediaRecorder 重置成功");
+          } catch (Exception e) {
+            Log.e(TAG, "stopRecorderInternal: 重置 MediaRecorder 失败", e);
+          }
         }
+        Log.d(TAG, "stopRecorderInternal: 释放 Recorder Surfaces");
         releaseRecorderSurfaces();
+        Log.d(TAG, "stopRecorderInternal: 释放 MediaRecorder");
+        releaseMediaRecorder();
 
         if (closeCameraAfterStop) {
+          Log.d(TAG, "stopRecorderInternal: 关闭相机");
           releaseCamera();
+          Log.d(TAG, "stopRecorderInternal: 相机关闭完成");
         } else if (mCameraDevice != null) {
+          Log.d(TAG, "stopRecorderInternal: 保持相机开启，重新初始化预览");
           initCameraPreview();
         }
 
         if (!stopSucceeded || shouldDiscardFile || videoFile == null || !videoFile.exists() || videoFile.length() <= 0) {
+          Log.d(TAG, "stopRecorderInternal: 录制失败或文件无效");
           deleteFileQuietly(videoFile);
           CtyVideoCaptureCordova.CallJSMsg(new JSONArray());
+          Log.d(TAG, "===== stopRecorderInternal END (失败) =====");
           return;
         }
 
         try {
           JSONArray mediaFile = CtyVideoCaptureCordova.GetMediaFileInfo(videoFile);
           CtyVideoCaptureCordova.CallJSMsg(mediaFile);
+          Log.d(TAG, "===== stopRecorderInternal END (成功) =====");
         } catch (JSONException e) {
           Log.e(TAG, "stopRecorder: 组装返回数据失败", e);
           CtyVideoCaptureCordova.CallJSMsg(new JSONArray());
+          Log.d(TAG, "===== stopRecorderInternal END (异常) =====");
         }
       }
     });
@@ -714,9 +746,23 @@ public class CtyVideoCaptureHelper {
   }
 
   public void releaseCamera() {
+    Log.d(TAG, "===== releaseCamera START =====");
+    Log.d(TAG, "releaseCamera: mCameraCaptureSession=" + (mCameraCaptureSession != null) + 
+      ", mCameraDevice=" + (mCameraDevice != null) + ", isRecordingVideo=" + isRecordingVideo);
+    
+    // 防止重复释放
+    if (mCameraCaptureSession == null && mCameraDevice == null) {
+      Log.d(TAG, "releaseCamera: 相机资源已释放，跳过");
+      canExchangeCamera = false;
+      Log.d(TAG, "===== releaseCamera END (已释放) =====");
+      return;
+    }
+    
     if (mCameraCaptureSession != null) {
       try {
+        Log.d(TAG, "releaseCamera: 开始关闭 CameraCaptureSession");
         mCameraCaptureSession.close();
+        Log.d(TAG, "releaseCamera: CameraCaptureSession 关闭成功");
       } catch (Exception e) {
         Log.w(TAG, "releaseCamera: close session failed", e);
       }
@@ -725,7 +771,9 @@ public class CtyVideoCaptureHelper {
 
     if (mCameraDevice != null) {
       try {
+        Log.d(TAG, "releaseCamera: 开始关闭 CameraDevice");
         mCameraDevice.close();
+        Log.d(TAG, "releaseCamera: CameraDevice 关闭成功");
       } catch (Exception e) {
         Log.w(TAG, "releaseCamera: close device failed", e);
       }
@@ -736,9 +784,13 @@ public class CtyVideoCaptureHelper {
       mIsOpeningCamera = false;
     }
 
+    Log.d(TAG, "releaseCamera: 释放 Surfaces");
     releaseRecorderSurfaces();
+    Log.d(TAG, "releaseCamera: 释放 MediaRecorder");
+    releaseMediaRecorder();
 
     canExchangeCamera = false;
+    Log.d(TAG, "===== releaseCamera END =====");
   }
 
   private void initCameraDeviceStateCallback() {
@@ -892,21 +944,29 @@ public class CtyVideoCaptureHelper {
   }
 
   private void closeCaptureSessionSafely() {
+    Log.d(TAG, "closeCaptureSessionSafely: mCameraCaptureSession=" + (mCameraCaptureSession != null));
     if (mCameraCaptureSession == null) {
+      Log.d(TAG, "closeCaptureSessionSafely: session already closed");
       return;
     }
     try {
+      Log.d(TAG, "closeCaptureSessionSafely: stopRepeating");
       mCameraCaptureSession.stopRepeating();
+      Log.d(TAG, "closeCaptureSessionSafely: stopRepeating success");
     } catch (Exception e) {
       Log.w(TAG, "closeCaptureSessionSafely: stopRepeating failed", e);
     }
     try {
+      Log.d(TAG, "closeCaptureSessionSafely: abortCaptures");
       mCameraCaptureSession.abortCaptures();
+      Log.d(TAG, "closeCaptureSessionSafely: abortCaptures success");
     } catch (Exception e) {
       Log.w(TAG, "closeCaptureSessionSafely: abortCaptures failed", e);
     }
     try {
+      Log.d(TAG, "closeCaptureSessionSafely: close");
       mCameraCaptureSession.close();
+      Log.d(TAG, "closeCaptureSessionSafely: close success");
     } catch (Exception e) {
       Log.w(TAG, "closeCaptureSessionSafely: close failed", e);
     }
@@ -981,9 +1041,13 @@ public class CtyVideoCaptureHelper {
   }
 
   private void releaseRecorderSurfaces() {
+    Log.d(TAG, "releaseRecorderSurfaces: preview=" + (mRecorderPreviewSurface != null) + 
+      ", input=" + (mRecorderInputSurface != null));
     if (mRecorderPreviewSurface != null) {
       try {
+        Log.d(TAG, "releaseRecorderSurfaces: 释放 mRecorderPreviewSurface");
         mRecorderPreviewSurface.release();
+        Log.d(TAG, "releaseRecorderSurfaces: mRecorderPreviewSurface 释放成功");
       } catch (Exception e) {
         Log.w(TAG, "releaseRecorderSurfaces: preview release failed", e);
       }
@@ -992,12 +1056,37 @@ public class CtyVideoCaptureHelper {
 
     if (mRecorderInputSurface != null) {
       try {
+        Log.d(TAG, "releaseRecorderSurfaces: 释放 mRecorderInputSurface");
         mRecorderInputSurface.release();
+        Log.d(TAG, "releaseRecorderSurfaces: mRecorderInputSurface 释放成功");
       } catch (Exception e) {
         Log.w(TAG, "releaseRecorderSurfaces: recorder release failed", e);
       }
       mRecorderInputSurface = null;
     }
+    Log.d(TAG, "releaseRecorderSurfaces: 完成");
+  }
+
+  private void releaseMediaRecorder() {
+    Log.d(TAG, "releaseMediaRecorder: mMediaRecorder=" + (mMediaRecorder != null));
+    if (mMediaRecorder != null) {
+      try {
+        Log.d(TAG, "releaseMediaRecorder: 执行 reset()");
+        mMediaRecorder.reset();
+        Log.d(TAG, "releaseMediaRecorder: reset() 成功");
+      } catch (Exception e) {
+        Log.w(TAG, "releaseMediaRecorder: reset failed", e);
+      }
+      try {
+        Log.d(TAG, "releaseMediaRecorder: 执行 release()");
+        mMediaRecorder.release();
+        Log.d(TAG, "releaseMediaRecorder: release() 成功");
+      } catch (Exception e) {
+        Log.w(TAG, "releaseMediaRecorder: release failed", e);
+      }
+      mMediaRecorder = null;
+    }
+    Log.d(TAG, "releaseMediaRecorder: 完成");
   }
 
   private void deleteFileQuietly(File file) {

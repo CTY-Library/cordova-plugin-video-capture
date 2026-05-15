@@ -5,7 +5,7 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginManager;
 import org.apache.cordova.PluginResult;
-
+ 
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
@@ -220,49 +220,70 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
 
   private void endVideoCapture(CallbackContext callbackContext) throws JSONException {
     //execingCallbackContext=callbackContext;
+    Log.d("CtyVideoCapture", "===== endVideoCapture START =====");
     if (mCtyVideoCaptureFragment.CtyVideoCaptureHelper == null) {
+      Log.e("CtyVideoCapture", "endVideoCapture: Helper 为空");
       callbackContext.error("请先执行init进行初始化");
       return;
     }
+    Log.d("CtyVideoCapture", "endVideoCapture: 调用 stopRecorderAndCloseCamera");
     mCtyVideoCaptureFragment.CtyVideoCaptureHelper.stopRecorderAndCloseCamera();
+    Log.d("CtyVideoCapture", "endVideoCapture: stopRecorderAndCloseCamera 完成");
+    Log.d("CtyVideoCapture", "endVideoCapture: 调用 dismissCaptureUi");
     dismissCaptureUi();
+    Log.d("CtyVideoCapture", "===== endVideoCapture END =====");
     callbackContext.success("success");
 
   }
 
   private void dismissCaptureUi() {
+    Log.d("CtyVideoCapture", "===== dismissCaptureUi START =====");
     final Activity activity = cordova.getActivity();
     if (activity == null) {
+      Log.e("CtyVideoCapture", "dismissCaptureUi: Activity 为空");
       return;
     }
 
     activity.runOnUiThread(new Runnable() {
       @Override
       public void run() {
+        Log.d("CtyVideoCapture", "dismissCaptureUi: 在 UI 线程中执行");
         try {
           FragmentManager fragmentManager = activity.getFragmentManager();
+          Log.d("CtyVideoCapture", "dismissCaptureUi: mCtyVideoCaptureFragment=" + (mCtyVideoCaptureFragment != null) +
+            ", isAdded=" + (mCtyVideoCaptureFragment != null && mCtyVideoCaptureFragment.isAdded()));
           if (mCtyVideoCaptureFragment != null && mCtyVideoCaptureFragment.isAdded()) {
+            Log.d("CtyVideoCapture", "dismissCaptureUi: 开始移除 Fragment");
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
             fragmentTransaction.remove(mCtyVideoCaptureFragment);
             fragmentTransaction.commitAllowingStateLoss();
+            Log.d("CtyVideoCapture", "dismissCaptureUi: Fragment 移除完成");
           }
           mCtyVideoCaptureFragment = null;
 
+          Log.d("CtyVideoCapture", "dismissCaptureUi: 移除容器 View");
           View containerView = activity.findViewById(containerViewId);
           if (containerView != null) {
             ViewParent parent = containerView.getParent();
             if (parent instanceof ViewGroup) {
               ((ViewGroup) parent).removeView(containerView);
+              Log.d("CtyVideoCapture", "dismissCaptureUi: 容器 View 移除成功");
             }
+          } else {
+            Log.d("CtyVideoCapture", "dismissCaptureUi: 容器 View 未找到");
           }
 
+          Log.d("CtyVideoCapture", "dismissCaptureUi: 恢复 WebView");
           View webViewRoot = webView != null ? webView.getView() : null;
           if (webViewRoot != null) {
             webViewRoot.bringToFront();
             webViewRoot.setVisibility(View.VISIBLE);
+            Log.d("CtyVideoCapture", "dismissCaptureUi: WebView 恢复成功");
           }
+          Log.d("CtyVideoCapture", "===== dismissCaptureUi END (成功) =====");
         } catch (Exception e) {
           Log.e("CtyVideoCapture", "dismissCaptureUi 失败: " + e.getMessage(), e);
+          Log.d("CtyVideoCapture", "===== dismissCaptureUi END (异常) =====");
         }
       }
     });

@@ -58,10 +58,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
             <uses-feature android:name="android.hardware.camera.any" />
             <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.RECORD_AUDIO" />
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-  	    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-            <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
         </config-file>
 
         <source-file src="src/android/CtyVideoCaptureCordova.java" target-dir="src/com/cty/CtyVideoCapture" />
@@ -95,6 +92,25 @@ xmlns:android="http://schemas.android.com/apk/res/android"
                 <param name="ios-package" value="CtyVideoCaptureCordova" />
             </feature>
         </config-file>
+
+        <preference name="CAMERA_USAGE_DESCRIPTION" default="Need camera access to capture photos and videos." />
+        <preference name="MICROPHONE_USAGE_DESCRIPTION" default="Need microphone access to record video audio." />
+        <preference name="PHOTO_LIBRARY_USAGE_DESCRIPTION" default="Need photo library access to save captured media." />
+        <preference name="PHOTO_LIBRARY_ADD_USAGE_DESCRIPTION" default="Need photo library add access to save captured media." />
+
+        <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
+            <string>$CAMERA_USAGE_DESCRIPTION</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSMicrophoneUsageDescription">
+            <string>$MICROPHONE_USAGE_DESCRIPTION</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSPhotoLibraryUsageDescription">
+            <string>$PHOTO_LIBRARY_USAGE_DESCRIPTION</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSPhotoLibraryAddUsageDescription">
+            <string>$PHOTO_LIBRARY_ADD_USAGE_DESCRIPTION</string>
+        </config-file>
+
         <header-file src="src/ios/CtyVideoTranscode.h" />
         <source-file src="src/ios/CtyVideoTranscode.m" />
         <header-file src="src/ios/CtyAVAssetExportSession.h" />

@@ -20,6 +20,7 @@
 #import "CtyVideoCaptureCordova.h"
 #import "CDVFile.h"
 #import <Cordova/CDVAvailability.h>
+#import <Photos/Photos.h>
 
 
 #define kW3CMediaFormatHeight @"height"
@@ -28,6 +29,29 @@
 #define kW3CMediaFormatBitrate @"bitrate"
 #define kW3CMediaFormatDuration @"duration"
 #define kW3CMediaModeType @"type"
+
+static NSString * const CtyVideoCaptureErrorPermissionDeniedFirstTime = @"PERMISSION_DENIED_FIRST_TIME";
+static NSString * const CtyVideoCaptureErrorPermissionDeniedNeedSettings = @"PERMISSION_DENIED_NEED_SETTINGS";
+static NSString * const CtyVideoCaptureErrorPermissionRestricted = @"PERMISSION_RESTRICTED";
+static NSString * const CtyVideoCaptureErrorPermissionStateUnresolved = @"PERMISSION_STATE_UNRESOLVED";
+static NSString * const CtyVideoCaptureErrorOpenSettingsFailed = @"OPEN_SETTINGS_FAILED";
+
+static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
+{
+    if (status == PHAuthorizationStatusAuthorized) {
+        return YES;
+    }
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
+    if (@available(iOS 14.0, *)) {
+        if (status == PHAuthorizationStatusLimited) {
+            return YES;
+        }
+    }
+#endif
+
+    return NO;
+}
 
 @implementation NSBundle (PluginExtensions)
 
@@ -145,7 +169,6 @@
             pickerController = [[CDVImagePicker alloc] init];
         }
 
-        [self showAlertIfAccessProhibited];
         pickerController.delegate = self;
         pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
         pickerController.allowsEditing = NO;
@@ -163,7 +186,26 @@
         // CDVImagePicker specific property
         pickerController.callbackId = callbackId;
         pickerController.modalPresentationStyle = UIModalPresentationCurrentContext;
-        [self.viewController presentViewController:pickerController animated:YES completion:nil];
+
+        __weak CtyVideoCaptureCordova* weakSelf = self;
+        [self ensureCameraPermissionForCallbackId:callbackId completion:^(BOOL granted) {
+            if (!granted) {
+                weakSelf->pickerController = nil;
+                weakSelf.inUse = NO;
+                return;
+            }
+            [weakSelf ensurePhotoLibraryPermissionForCallbackId:callbackId saveToPhotoAlbum:YES completion:^(BOOL photoGranted) {
+                if (!photoGranted) {
+                    weakSelf->pickerController = nil;
+                    weakSelf.inUse = NO;
+                    return;
+                }
+
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [weakSelf.viewController presentViewController:weakSelf->pickerController animated:YES completion:nil];
+                });
+            }];
+        }];
     }
 }
 
@@ -364,8 +406,6 @@
         pickerController = nil;
         NSLog(@"===== iOS captureVideo END (video mode 不可用) =====");
     } else {
-        [self showAlertIfAccessProhibited];
-
         pickerController.delegate = self;
         pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
         pickerController.allowsEditing = NO;
@@ -451,19 +491,40 @@
         // CDVImagePicker specific property
         pickerController.callbackId = callbackId;
         pickerController.modalPresentationStyle = UIModalPresentationCurrentContext;
-     
-        NSLog(@"captureVideo: 将 pickerController 添加到 view hierarchy");
-//        [self.viewController presentViewController:pickerController animated:YES completion:nil];
-        
-        [self.viewController addChildViewController:pickerController];
-        self.webView.opaque = NO; //
-        self.webView.backgroundColor = [UIColor clearColor];
-        [self.webView.superview addSubview:pickerController.view];
-        [self.webView.superview bringSubviewToFront:self.webView];
-        
-        NSLog(@"captureVideo: pickerController 显示完成");
-        self.inUse = YES;
-        NSLog(@"===== iOS captureVideo END (成功) =====");
+        BOOL saveToPhotoAlbum = YES;
+        if ([self->cfgoptions objectForKey:@"saveToPhotoAlbum"]) {
+            saveToPhotoAlbum = [[self->cfgoptions objectForKey:@"saveToPhotoAlbum"] boolValue];
+        }
+
+        __weak CtyVideoCaptureCordova* weakSelf = self;
+        [self ensureCameraAndMicrophonePermissionForCallbackId:callbackId completion:^(BOOL granted) {
+            if (!granted) {
+                weakSelf->pickerController = nil;
+                weakSelf.inUse = NO;
+                return;
+            }
+
+            [weakSelf ensurePhotoLibraryPermissionForCallbackId:callbackId saveToPhotoAlbum:saveToPhotoAlbum completion:^(BOOL photoGranted) {
+                if (!photoGranted) {
+                    weakSelf->pickerController = nil;
+                    weakSelf.inUse = NO;
+                    return;
+                }
+
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSLog(@"captureVideo: 将 pickerController 添加到 view hierarchy");
+                    [weakSelf.viewController addChildViewController:weakSelf->pickerController];
+                    weakSelf.webView.opaque = NO;
+                    weakSelf.webView.backgroundColor = [UIColor clearColor];
+                    [weakSelf.webView.superview addSubview:weakSelf->pickerController.view];
+                    [weakSelf.webView.superview bringSubviewToFront:weakSelf.webView];
+
+                    NSLog(@"captureVideo: pickerController 显示完成");
+                    weakSelf.inUse = YES;
+                    NSLog(@"===== iOS captureVideo END (成功) =====");
+                });
+            }];
+        }];
         
     }
 }
@@ -539,49 +600,224 @@
     return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:fileArray];
 }
 
-- (void)showAlertIfAccessProhibited
+- (CDVPluginResult*)permissionErrorResultWithCode:(NSString*)code message:(NSString*)message
 {
-    if (![self hasCameraAccess]) {
-        [self showPermissionsAlert];
+    NSDictionary* payload = @{ @"code": code, @"message": message };
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:payload];
+}
+
+- (BOOL)isGrantedAuthorizationStatus:(AVAuthorizationStatus)status
+{
+    return status == AVAuthorizationStatusAuthorized;
+}
+
+- (void)requestPhotoLibraryAuthorizationIfNeededWithCompletion:(void (^)(PHAuthorizationStatus status))completion
+{
+    if (@available(iOS 14.0, *)) {
+        PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelAddOnly];
+        if (status == PHAuthorizationStatusNotDetermined) {
+            [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelAddOnly handler:^(PHAuthorizationStatus resolvedStatus) {
+                completion(resolvedStatus);
+            }];
+            return;
+        }
+
+        completion(status);
+        return;
     }
+
+    PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+    if (status == PHAuthorizationStatusNotDetermined) {
+        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus resolvedStatus) {
+            completion(resolvedStatus);
+        }];
+        return;
+    }
+
+    completion(status);
 }
 
-- (BOOL)hasCameraAccess
+- (void)ensurePhotoLibraryPermissionForCallbackId:(NSString*)callbackId saveToPhotoAlbum:(BOOL)saveToPhotoAlbum completion:(void (^)(BOOL granted))completion
 {
-    AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    if (!saveToPhotoAlbum) {
+        completion(YES);
+        return;
+    }
 
-    return status != AVAuthorizationStatusDenied && status != AVAuthorizationStatusRestricted;
+    PHAuthorizationStatus initialStatus;
+    if (@available(iOS 14.0, *)) {
+        initialStatus = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelAddOnly];
+    } else {
+        initialStatus = [PHPhotoLibrary authorizationStatus];
+    }
+
+    [self requestPhotoLibraryAuthorizationIfNeededWithCompletion:^(PHAuthorizationStatus status) {
+        if (CtyVideoCapturePhotoAccessGranted(status)) {
+            completion(YES);
+            return;
+        }
+
+        if (status == PHAuthorizationStatusRestricted) {
+            [self sendPermissionErrorForCode:CtyVideoCaptureErrorPermissionRestricted callbackId:callbackId];
+        } else if (status == PHAuthorizationStatusDenied) {
+            [self sendPermissionErrorForCode:(initialStatus == PHAuthorizationStatusNotDetermined
+                ? CtyVideoCaptureErrorPermissionDeniedFirstTime
+                : CtyVideoCaptureErrorPermissionDeniedNeedSettings)
+                callbackId:callbackId];
+        } else {
+            [self sendPermissionErrorForCode:CtyVideoCaptureErrorPermissionStateUnresolved callbackId:callbackId];
+        }
+
+        completion(NO);
+    }];
 }
 
-- (void)showPermissionsAlert
+- (void)sendPermissionErrorForCode:(NSString*)code callbackId:(NSString*)callbackId
 {
-    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"]
-        message:NSLocalizedString(@"Access to the camera has been prohibited; please enable it in the Settings app to continue.", nil)
-        preferredStyle:UIAlertControllerStyleAlert];
-    [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"OK", nil)
-    style:UIAlertActionStyleDefault
-    handler:^(UIAlertAction * action)
-    {
-        [self returnNoPermissionError];
-    }]];
-    [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Settings", nil)
-    style:UIAlertActionStyleDefault
-    handler:^(UIAlertAction * action)
-    {
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]options:@{} completionHandler:nil];
-        [self returnNoPermissionError];
-    }]];
-    [self.viewController presentViewController:alertController animated:YES completion:^{}];
+    NSString* message = @"Permission denied.";
+    if ([code isEqualToString:CtyVideoCaptureErrorPermissionDeniedNeedSettings]) {
+        message = @"Permission denied. Please open app settings and enable the required permissions.";
+    } else if ([code isEqualToString:CtyVideoCaptureErrorPermissionRestricted]) {
+        message = @"Permission is restricted by system policy.";
+    } else if ([code isEqualToString:CtyVideoCaptureErrorPermissionStateUnresolved]) {
+        message = @"Permission request did not resolve to an authorized state.";
+    }
+
+    CDVPluginResult* result = [self permissionErrorResultWithCode:code message:message];
+    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
 }
 
-- (void)returnNoPermissionError
+- (void)requestAuthorizationIfNeededForMediaType:(AVMediaType)mediaType completion:(void (^)(AVAuthorizationStatus status))completion
 {
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_PERMISSION_DENIED];
+    AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:mediaType];
+    if (status == AVAuthorizationStatusNotDetermined) {
+        [AVCaptureDevice requestAccessForMediaType:mediaType completionHandler:^(BOOL granted) {
+            AVAuthorizationStatus resolved = granted ? AVAuthorizationStatusAuthorized : AVAuthorizationStatusDenied;
+            completion(resolved);
+        }];
+        return;
+    }
+    completion(status);
+}
 
-    [[pickerController presentingViewController] dismissViewControllerAnimated:YES completion:nil];
-    [self.commandDelegate sendPluginResult:result callbackId:pickerController.callbackId];
-    pickerController = nil;
-    self.inUse = NO;
+- (void)ensureCameraPermissionForCallbackId:(NSString*)callbackId completion:(void (^)(BOOL granted))completion
+{
+    AVAuthorizationStatus initialStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    [self requestAuthorizationIfNeededForMediaType:AVMediaTypeVideo completion:^(AVAuthorizationStatus status) {
+        if ([self isGrantedAuthorizationStatus:status]) {
+            completion(YES);
+        } else if (status == AVAuthorizationStatusRestricted) {
+            [self sendPermissionErrorForCode:CtyVideoCaptureErrorPermissionRestricted callbackId:callbackId];
+            completion(NO);
+        } else if (status == AVAuthorizationStatusDenied) {
+            [self sendPermissionErrorForCode:(initialStatus == AVAuthorizationStatusNotDetermined
+                ? CtyVideoCaptureErrorPermissionDeniedFirstTime
+                : CtyVideoCaptureErrorPermissionDeniedNeedSettings)
+                callbackId:callbackId];
+            completion(NO);
+        } else {
+            [self sendPermissionErrorForCode:CtyVideoCaptureErrorPermissionStateUnresolved callbackId:callbackId];
+            completion(NO);
+        }
+    }];
+}
+
+- (void)ensureCameraAndMicrophonePermissionForCallbackId:(NSString*)callbackId completion:(void (^)(BOOL granted))completion
+{
+    AVAuthorizationStatus cameraInitialStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    AVAuthorizationStatus micInitialStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
+    __block AVAuthorizationStatus cameraFinalStatus = cameraInitialStatus;
+    __block AVAuthorizationStatus micFinalStatus = micInitialStatus;
+
+    dispatch_group_t group = dispatch_group_create();
+
+    dispatch_group_enter(group);
+    [self requestAuthorizationIfNeededForMediaType:AVMediaTypeVideo completion:^(AVAuthorizationStatus status) {
+        cameraFinalStatus = status;
+        dispatch_group_leave(group);
+    }];
+
+    dispatch_group_enter(group);
+    [self requestAuthorizationIfNeededForMediaType:AVMediaTypeAudio completion:^(AVAuthorizationStatus status) {
+        micFinalStatus = status;
+        dispatch_group_leave(group);
+    }];
+
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        if ([self isGrantedAuthorizationStatus:cameraFinalStatus] && [self isGrantedAuthorizationStatus:micFinalStatus]) {
+            completion(YES);
+            return;
+        }
+
+        if (cameraFinalStatus == AVAuthorizationStatusRestricted || micFinalStatus == AVAuthorizationStatusRestricted) {
+            [self sendPermissionErrorForCode:CtyVideoCaptureErrorPermissionRestricted callbackId:callbackId];
+            completion(NO);
+            return;
+        }
+
+        if (cameraFinalStatus == AVAuthorizationStatusDenied || micFinalStatus == AVAuthorizationStatusDenied) {
+            BOOL wasNotDetermined = (cameraInitialStatus == AVAuthorizationStatusNotDetermined)
+                || (micInitialStatus == AVAuthorizationStatusNotDetermined);
+            [self sendPermissionErrorForCode:(wasNotDetermined
+                ? CtyVideoCaptureErrorPermissionDeniedFirstTime
+                : CtyVideoCaptureErrorPermissionDeniedNeedSettings)
+                callbackId:callbackId];
+            completion(NO);
+            return;
+        }
+
+        [self sendPermissionErrorForCode:CtyVideoCaptureErrorPermissionStateUnresolved callbackId:callbackId];
+        completion(NO);
+    });
+}
+
+- (void)hasCapturePermission:(CDVInvokedUrlCommand*)command
+{
+    AVAuthorizationStatus cameraStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    AVAuthorizationStatus micStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
+    BOOL granted = [self isGrantedAuthorizationStatus:cameraStatus] && [self isGrantedAuthorizationStatus:micStatus];
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:granted];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (void)requestCapturePermission:(CDVInvokedUrlCommand*)command
+{
+    [self ensureCameraAndMicrophonePermissionForCallbackId:command.callbackId completion:^(BOOL granted) {
+        if (!granted) {
+            return;
+        }
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }];
+}
+
+- (void)openAppSettings:(CDVInvokedUrlCommand*)command
+{
+    NSURL* url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+    if (url == nil) {
+        CDVPluginResult* pluginResult = [self permissionErrorResultWithCode:CtyVideoCaptureErrorOpenSettingsFailed message:@"Could not build app settings URL."];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        return;
+    }
+
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:^(BOOL success) {
+            CDVPluginResult* pluginResult = success
+                ? [CDVPluginResult resultWithStatus:CDVCommandStatus_OK]
+                : [self permissionErrorResultWithCode:CtyVideoCaptureErrorOpenSettingsFailed message:@"Could not open app settings."];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }];
+    } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        BOOL success = [[UIApplication sharedApplication] openURL:url];
+#pragma clang diagnostic pop
+        CDVPluginResult* pluginResult = success
+            ? [CDVPluginResult resultWithStatus:CDVCommandStatus_OK]
+            : [self permissionErrorResultWithCode:CtyVideoCaptureErrorOpenSettingsFailed message:@"Could not open app settings."];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
 }
 
 - (void)getMediaModes:(CDVInvokedUrlCommand*)command

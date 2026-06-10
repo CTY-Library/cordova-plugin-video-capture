@@ -77,6 +77,9 @@ Although in the global scope, it is not available until after the `deviceready` 
 
 - capture.captureImage
 - capture.captureVideo
+- hasCapturePermission
+- requestCapturePermission
+- openAppSettings
 - MediaFile.getFormatData
 
 ## Properties
@@ -85,6 +88,24 @@ Although in the global scope, it is not available until after the `deviceready` 
 - __supportedImageModes__: The recording image sizes and formats supported by the device. (ConfigurationData[])
 
 - __supportedVideoModes__: The recording video resolutions and formats supported by the device. (ConfigurationData[])
+
+## Permissions
+
+This plugin checks permissions at runtime before opening the capture UI.
+
+### Android
+
+- `captureVideo` requires `CAMERA` and `RECORD_AUDIO`.
+- If `saveToPhotoAlbum` is `true`, the plugin also uses legacy external storage access on Android 9 and below.
+- `hasCapturePermission` and `requestCapturePermission` reflect the permissions needed for the current capture flow.
+- `openAppSettings` opens the app details page so the user can enable permissions manually after a permanent denial.
+
+### iOS
+
+- `captureImage` requires camera access and photo library access because the plugin writes the captured image to the photo library.
+- `captureVideo` requires camera and microphone access, and photo library access only when `saveToPhotoAlbum` is `true`.
+- On iOS 14 and later, the plugin requests add-only photo library access when it only needs to save media.
+- If access is denied, the plugin returns `PERMISSION_DENIED_FIRST_TIME` for an initial denial and `PERMISSION_DENIED_NEED_SETTINGS` when the user must change settings manually.
 
 ## capture.captureImage
 
@@ -126,7 +147,8 @@ This plugins requires the following usage descriptions:
 
 * `NSCameraUsageDescription` describes the reason the app accesses the user's camera.
 * `NSMicrophoneUsageDescription` describes the reason the app accesses the user's microphone.
-* `NSPhotoLibraryUsageDescriptionentry` describes the reason the app accesses the user's photo library.
+* `NSPhotoLibraryUsageDescription` describes the reason the app accesses the user's photo library.
+* `NSPhotoLibraryAddUsageDescription` describes the reason the app saves captured media to the photo library.
 
 
 To add these entries into the `info.plist`, you can use the `edit-config` tag in the `config.xml` like this:
@@ -146,6 +168,12 @@ To add these entries into the `info.plist`, you can use the `edit-config` tag in
 ```
 <edit-config target="NSPhotoLibraryUsageDescription" file="*-Info.plist" mode="merge">
     <string>need to photo library access to get pictures from there</string>
+</edit-config>
+```
+
+```
+<edit-config target="NSPhotoLibraryAddUsageDescription" file="*-Info.plist" mode="merge">
+    <string>need photo library add access to save captured media</string>
 </edit-config>
 ```
 

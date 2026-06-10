@@ -24,6 +24,7 @@ import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
@@ -33,6 +34,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.FrameLayout;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import org.apache.cordova.file.FileUtils;
 import org.apache.cordova.file.LocalFilesystemURL;
@@ -45,6 +49,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Arrays;
@@ -54,6 +59,15 @@ import java.util.Arrays;
  */
 public class CtyVideoCaptureCordova extends CordovaPlugin {
 
+  private static final String ACTION_CAPTURE_VIDEO = "captureVideo";
+  private static final String ACTION_HAS_CAPTURE_PERMISSION = "hasCapturePermission";
+  private static final String ACTION_REQUEST_CAPTURE_PERMISSION = "requestCapturePermission";
+  private static final String ACTION_OPEN_APP_SETTINGS = "openAppSettings";
+
+  private static final String ERROR_PERMISSION_DENIED_FIRST_TIME = "PERMISSION_DENIED_FIRST_TIME";
+  private static final String ERROR_PERMISSION_DENIED_NEED_SETTINGS = "PERMISSION_DENIED_NEED_SETTINGS";
+  private static final String ERROR_OPEN_SETTINGS_FAILED = "OPEN_SETTINGS_FAILED";
+
   private static CallbackContext execingCallbackContext;
   private static int previewFragmentId = 1231231;
   private static CordovaWebView mCordovaWebView;
@@ -62,6 +76,7 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
   private CtyVideoCaptureFragment mCtyVideoCaptureFragment;
   private int containerViewId = 12312321;
   private ViewParent mViewParent;
+  private String[] currentRequestedPermissions = new String[0];
 
   public CtyVideoCaptureCordova() {
     super();
@@ -70,7 +85,18 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
   @Override
   public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
 
-    if (action.equals("captureVideo")) {
+    if (ACTION_HAS_CAPTURE_PERMISSION.equals(action)) {
+      callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, allPermissionsGranted(shouldSaveToPhotoAlbum(args))));
+      return true;
+    } else if (ACTION_REQUEST_CAPTURE_PERMISSION.equals(action)) {
+      execingCallbackContext = callbackContext;
+      requestCapturePermissions(Configuration.REQUEST_CODE_PERMISSION_ONLY, shouldSaveToPhotoAlbum(args));
+      return true;
+    } else if (ACTION_OPEN_APP_SETTINGS.equals(action)) {
+      execingCallbackContext = callbackContext;
+      openAppSettings(callbackContext);
+      return true;
+    } else if (ACTION_CAPTURE_VIDEO.equals(action)) {
       Log.d("CtyVideoCapture", "execute: captureVideo 被调用");
       execingCallbackContext = callbackContext;
       JSONObject options = args.optJSONObject(0);
@@ -90,19 +116,12 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
             Log.d("CtyVideoCapture", "线程池: 开始初始化配置");
             configOption = new CtyVideoConfigOption(finalOptions, callbackContext);
             Log.d("CtyVideoCapture", "线程池: 配置初始化完成，检查权限");
-            if (allPermissionsGranted()) {
+            if (allPermissionsGranted(configOption.saveToPhotoAlbum)) {
               Log.d("CtyVideoCapture", "所有权限已授予，开始初始化 Fragment");
               initFragment(configOption, callbackContext);
             } else {
               Log.d("CtyVideoCapture", "权限未授予，请求权限");
-              cordova.getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                  Log.d("CtyVideoCapture", "UI线程: 请求权限");
-                  cordova.requestPermissions(CtyVideoCaptureCordova.this, Configuration.REQUEST_CODE_PERMISSIONS,
-                    Configuration.REQUIRED_PERMISSIONS);
-                }
-              });
+              requestCapturePermissions(Configuration.REQUEST_CODE_PERMISSIONS, configOption.saveToPhotoAlbum);
             }
           } catch (Exception e) {
             Log.e("CtyVideoCapture", "execute 异常: " + e.getMessage(), e);
@@ -302,56 +321,168 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
   public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults)
     throws JSONException {
     Log.d("CtyVideoCapture", "onRequestPermissionResult: requestCode=" + requestCode + ", permissions=" + Arrays.toString(permissions));
-    for (int i = 0; i < grantResults.length; i++) {
-      if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-        String deniedPermission = (permissions != null && i < permissions.length) ? permissions[i] : "unknown";
-
-        // Android 10+ 对应用私有目录写入不再需要 WRITE_EXTERNAL_STORAGE，拒绝后继续初始化
-        if (Manifest.permission.WRITE_EXTERNAL_STORAGE.equals(deniedPermission)
-          && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-          Log.w("CtyVideoCapture", "WRITE_EXTERNAL_STORAGE 被拒绝，但在 Android 10+ 可忽略");
-          continue;
-        }
-
-        Log.e("CtyVideoCapture", "权限被拒绝: " + deniedPermission);
-        execingCallbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION));
-        return;
-      }
-    }
+    boolean granted = isAllGranted(grantResults);
 
     if (requestCode == Configuration.REQUEST_CODE_PERMISSIONS) {
-      Log.d("CtyVideoCapture", "所有权限已授予，初始化 Fragment");
-      this.initFragment(configOption, execingCallbackContext);
+      if (granted) {
+        Log.d("CtyVideoCapture", "所有权限已授予，初始化 Fragment");
+        this.initFragment(configOption, execingCallbackContext);
+      } else {
+        sendPermissionDeniedError(execingCallbackContext);
+      }
+      currentRequestedPermissions = new String[0];
+    } else if (requestCode == Configuration.REQUEST_CODE_PERMISSION_ONLY) {
+      if (granted) {
+        execingCallbackContext.success();
+      } else {
+        sendPermissionDeniedError(execingCallbackContext);
+      }
+      currentRequestedPermissions = new String[0];
     } else {
       Log.w("CtyVideoCapture", "未知的请求代码: " + requestCode);
     }
   }
 
-  private boolean allPermissionsGranted() {
-    for (String permission : Configuration.REQUIRED_PERMISSIONS) {
-      if (!cordova.hasPermission(permission)) {
+  private boolean shouldSaveToPhotoAlbum(JSONArray args) {
+    JSONObject options = args != null ? args.optJSONObject(0) : null;
+    if (options != null && options.has("saveToPhotoAlbum")) {
+      return options.optBoolean("saveToPhotoAlbum", true);
+    }
+    return true;
+  }
+
+  private boolean allPermissionsGranted(boolean saveToPhotoAlbum) {
+    Activity activity = cordova.getActivity();
+    if (activity == null) {
+      return false;
+    }
+
+    for (String permission : Configuration.getRequiredPermissions(saveToPhotoAlbum)) {
+      if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
         return false;
       }
     }
     return true;
   }
 
+  private boolean isAllGranted(int[] grantResults) {
+    if (grantResults == null || grantResults.length == 0) {
+      return false;
+    }
+    for (int grantResult : grantResults) {
+      if (grantResult != PackageManager.PERMISSION_GRANTED) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private void requestCapturePermissions(final int requestCode, final boolean saveToPhotoAlbum) {
+    final String[] permissions = Configuration.getRequiredPermissions(saveToPhotoAlbum);
+    currentRequestedPermissions = permissions;
+
+    if (permissions.length == 0 || allPermissionsGranted(saveToPhotoAlbum)) {
+      if (requestCode == Configuration.REQUEST_CODE_PERMISSION_ONLY && execingCallbackContext != null) {
+        execingCallbackContext.success();
+      } else if (requestCode == Configuration.REQUEST_CODE_PERMISSIONS && execingCallbackContext != null && configOption != null) {
+        initFragment(configOption, execingCallbackContext);
+      }
+      return;
+    }
+
+    cordova.getActivity().runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        Log.d("CtyVideoCapture", "UI线程: 请求权限 " + Arrays.toString(permissions));
+        cordova.requestPermissions(CtyVideoCaptureCordova.this, requestCode, permissions);
+      }
+    });
+  }
+
+  private boolean shouldPromptToOpenSettings(String[] permissions) {
+    Activity activity = cordova.getActivity();
+    if (activity == null) {
+      return false;
+    }
+
+    if (permissions == null || permissions.length == 0) {
+      return false;
+    }
+
+    for (String permission : permissions) {
+      if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED
+        && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private void sendPermissionDeniedError(CallbackContext callbackContext) {
+    if (callbackContext == null) {
+      return;
+    }
+
+    String[] permissions = currentRequestedPermissions != null && currentRequestedPermissions.length > 0
+      ? currentRequestedPermissions
+      : Configuration.getRequiredPermissions(true);
+
+    String code = shouldPromptToOpenSettings(permissions)
+      ? ERROR_PERMISSION_DENIED_NEED_SETTINGS
+      : ERROR_PERMISSION_DENIED_FIRST_TIME;
+    String message = ERROR_PERMISSION_DENIED_NEED_SETTINGS.equals(code)
+      ? "Permission denied. Please open app settings and enable the required permissions."
+      : "Permission denied.";
+
+    JSONObject payload = new JSONObject();
+    try {
+      payload.put("code", code);
+      payload.put("message", message);
+      callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, payload));
+    } catch (JSONException e) {
+      callbackContext.error(code);
+    }
+  }
+
+  private void openAppSettings(CallbackContext callbackContext) {
+    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+    Uri uri = Uri.fromParts("package", cordova.getActivity().getPackageName(), null);
+    intent.setData(uri);
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    try {
+      cordova.getActivity().startActivity(intent);
+      callbackContext.success();
+    } catch (Exception e) {
+      JSONObject payload = new JSONObject();
+      try {
+        payload.put("code", ERROR_OPEN_SETTINGS_FAILED);
+        payload.put("message", "Could not open app settings.");
+        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, payload));
+      } catch (JSONException jsonException) {
+        callbackContext.error(ERROR_OPEN_SETTINGS_FAILED);
+      }
+    }
+  }
+
   static class Configuration {
     public static final String TAG = "video";
     public static final String FILENAME_FORMAT = "yyyyMMdd_HHmmss_SSS";
     public static final int REQUEST_CODE_PERMISSIONS = 10;
-    public static final int REQUEST_AUDIO_CODE_PERMISSIONS = 12;
-    public static final String[] REQUIRED_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-      ? (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-      ? new String[] { Manifest.permission.CAMERA,
-      Manifest.permission.RECORD_AUDIO
+    public static final int REQUEST_CODE_PERMISSION_ONLY = 11;
+
+    public static String[] getRequiredPermissions() {
+      return getRequiredPermissions(true);
     }
-      : new String[] { Manifest.permission.CAMERA,
-      Manifest.permission.RECORD_AUDIO,
-      Manifest.permission.WRITE_EXTERNAL_STORAGE
-    })
-      : new String[] { Manifest.permission.CAMERA,
-      Manifest.permission.RECORD_AUDIO };
+
+    public static String[] getRequiredPermissions(boolean saveToPhotoAlbum) {
+      List<String> permissions = new ArrayList<String>();
+      permissions.add(Manifest.permission.CAMERA);
+      permissions.add(Manifest.permission.RECORD_AUDIO);
+      if (saveToPhotoAlbum && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+      }
+      return permissions.toArray(new String[0]);
+    }
 
     public static File CreateFile(boolean saveToPhotoAlbum, Context context, String extension) {
       try {

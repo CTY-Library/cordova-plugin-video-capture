@@ -66,6 +66,15 @@ var CtyVideoCaptureCordova = {
         error        
     ) {
         exec(success, error, 'CtyVideoCaptureCordova', 'stopVideoCapture', ['']);
+    },
+    hasCapturePermission: function(success, error) {
+        exec(success, error, 'CtyVideoCaptureCordova', 'hasCapturePermission', []);
+    },
+    requestCapturePermission: function(success, error) {
+        exec(success, error, 'CtyVideoCaptureCordova', 'requestCapturePermission', []);
+    },
+    openAppSettings: function(success, error) {
+        exec(success, error, 'CtyVideoCaptureCordova', 'openAppSettings', []);
     } 
 }
 

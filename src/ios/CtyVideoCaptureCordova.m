@@ -338,7 +338,11 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         return;
     }
     
-    NSLog(@"stopVideoCapture: 开始停止录制");
+    NSString* callbackId = [(CDVImagePicker*)pickerController callbackId];
+    NSLog(@"stopVideoCapture: 开始停止录制，callbackId=%@", callbackId);
+    
+    // Store video path if available before cleaning up
+    NSString* recordedVideoPath = [(CDVImagePicker*)pickerController recordedVideoPath];
     
     // 调用stopVideoCapture如果存在
     if ([pickerController respondsToSelector:@selector(stopVideoCapture)]) {
@@ -373,17 +377,32 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         }
     }
     
-    NSLog(@"stopVideoCapture: 释放 pickerController");
-    pickerController = nil;
-    self.inUse = NO;
-    
     // 恢复 webView
     NSLog(@"stopVideoCapture: 恢复 webView");
     self.webView.opaque = YES;
     self.webView.backgroundColor = [UIColor whiteColor];
     
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
-    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    // 注意：只有当 didFinishPickingMediaWithInfo 未被调用时，才在这里处理视频
+    // 如果已经被处理过（videoProcessed=YES），则跳过处理，避免重复
+    CDVPluginResult* result = nil;
+    CDVImagePicker* pickerForCheck = (CDVImagePicker*)pickerController;
+    if (pickerForCheck && !pickerForCheck.videoProcessed && recordedVideoPath && recordedVideoPath.length > 0) {
+        NSLog(@"stopVideoCapture: 处理录制的视频（didFinishPickingMediaWithInfo 未被调用），路径=%@", recordedVideoPath);
+        result = [self processVideo:recordedVideoPath forCallbackId:callbackId];
+        [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+    } else {
+        if (pickerForCheck && pickerForCheck.videoProcessed) {
+            NSLog(@"stopVideoCapture: 视频已在 didFinishPickingMediaWithInfo 中处理，跳过重复处理");
+        } else {
+            NSLog(@"stopVideoCapture: 未找到未处理的视频路径");
+        }
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }
+    
+    NSLog(@"stopVideoCapture: 释放 pickerController");
+    pickerController = nil;
+    self.inUse = NO;
     
     NSLog(@"===== iOS stopVideoCapture END =====");
 }
@@ -1105,6 +1124,9 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         NSString* moviePath = [(NSURL *)[info objectForKey:UIImagePickerControllerMediaURL] path];
         NSLog(@"didFinishPickingMediaWithInfo: 处理视频，路径=%@", moviePath);
         if (moviePath) {
+            // Store the recorded video path and mark as processed
+            cameraPicker.recordedVideoPath = moviePath;
+            cameraPicker.videoProcessed = YES;
             result = [self processVideo:moviePath forCallbackId:callbackId];
         }
     }

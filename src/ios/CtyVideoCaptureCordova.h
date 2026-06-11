@@ -39,10 +39,14 @@ typedef NSUInteger CDVCaptureError;
     NSString* callbackid;
     NSInteger quality;
     NSString* mimeType;
+    NSString* recordedVideoPath;
+    BOOL videoProcessed;
 }
 @property (assign) NSInteger quality;
 @property (copy)   NSString* callbackId;
 @property (copy)   NSString* mimeType;
+@property (copy)   NSString* recordedVideoPath;
+@property (assign) BOOL videoProcessed;
 @end
 
 @interface CtyVideoCaptureCordova : CDVPlugin <UIImagePickerControllerDelegate, UINavigationControllerDelegate>

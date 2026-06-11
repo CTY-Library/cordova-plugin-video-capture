@@ -189,20 +189,32 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 
         __weak CtyVideoCaptureCordova* weakSelf = self;
         [self ensureCameraPermissionForCallbackId:callbackId completion:^(BOOL granted) {
-            if (!granted) {
-                weakSelf->pickerController = nil;
-                weakSelf.inUse = NO;
+            __strong CtyVideoCaptureCordova* strongSelf = weakSelf;
+            if (!strongSelf) {
                 return;
             }
-            [weakSelf ensurePhotoLibraryPermissionForCallbackId:callbackId saveToPhotoAlbum:YES completion:^(BOOL photoGranted) {
+            if (!granted) {
+                strongSelf->pickerController = nil;
+                strongSelf.inUse = NO;
+                return;
+            }
+            [strongSelf ensurePhotoLibraryPermissionForCallbackId:callbackId saveToPhotoAlbum:YES completion:^(BOOL photoGranted) {
+                __strong CtyVideoCaptureCordova* innerStrongSelf = weakSelf;
+                if (!innerStrongSelf) {
+                    return;
+                }
                 if (!photoGranted) {
-                    weakSelf->pickerController = nil;
-                    weakSelf.inUse = NO;
+                    innerStrongSelf->pickerController = nil;
+                    innerStrongSelf.inUse = NO;
                     return;
                 }
 
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [weakSelf.viewController presentViewController:weakSelf->pickerController animated:YES completion:nil];
+                    __strong CtyVideoCaptureCordova* mainStrongSelf = weakSelf;
+                    if (!mainStrongSelf) {
+                        return;
+                    }
+                    [mainStrongSelf.viewController presentViewController:mainStrongSelf->pickerController animated:YES completion:nil];
                 });
             }];
         }];
@@ -498,29 +510,41 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 
         __weak CtyVideoCaptureCordova* weakSelf = self;
         [self ensureCameraAndMicrophonePermissionForCallbackId:callbackId completion:^(BOOL granted) {
+            __strong CtyVideoCaptureCordova* strongSelf = weakSelf;
+            if (!strongSelf) {
+                return;
+            }
             if (!granted) {
-                weakSelf->pickerController = nil;
-                weakSelf.inUse = NO;
+                strongSelf->pickerController = nil;
+                strongSelf.inUse = NO;
                 return;
             }
 
-            [weakSelf ensurePhotoLibraryPermissionForCallbackId:callbackId saveToPhotoAlbum:saveToPhotoAlbum completion:^(BOOL photoGranted) {
+            [strongSelf ensurePhotoLibraryPermissionForCallbackId:callbackId saveToPhotoAlbum:saveToPhotoAlbum completion:^(BOOL photoGranted) {
+                __strong CtyVideoCaptureCordova* innerStrongSelf = weakSelf;
+                if (!innerStrongSelf) {
+                    return;
+                }
                 if (!photoGranted) {
-                    weakSelf->pickerController = nil;
-                    weakSelf.inUse = NO;
+                    innerStrongSelf->pickerController = nil;
+                    innerStrongSelf.inUse = NO;
                     return;
                 }
 
                 dispatch_async(dispatch_get_main_queue(), ^{
+                    __strong CtyVideoCaptureCordova* mainStrongSelf = weakSelf;
+                    if (!mainStrongSelf) {
+                        return;
+                    }
                     NSLog(@"captureVideo: 将 pickerController 添加到 view hierarchy");
-                    [weakSelf.viewController addChildViewController:weakSelf->pickerController];
-                    weakSelf.webView.opaque = NO;
-                    weakSelf.webView.backgroundColor = [UIColor clearColor];
-                    [weakSelf.webView.superview addSubview:weakSelf->pickerController.view];
-                    [weakSelf.webView.superview bringSubviewToFront:weakSelf.webView];
+                    [mainStrongSelf.viewController addChildViewController:mainStrongSelf->pickerController];
+                    mainStrongSelf.webView.opaque = NO;
+                    mainStrongSelf.webView.backgroundColor = [UIColor clearColor];
+                    [mainStrongSelf.webView.superview addSubview:mainStrongSelf->pickerController.view];
+                    [mainStrongSelf.webView.superview bringSubviewToFront:mainStrongSelf.webView];
 
                     NSLog(@"captureVideo: pickerController 显示完成");
-                    weakSelf.inUse = YES;
+                    mainStrongSelf.inUse = YES;
                     NSLog(@"===== iOS captureVideo END (成功) =====");
                 });
             }];

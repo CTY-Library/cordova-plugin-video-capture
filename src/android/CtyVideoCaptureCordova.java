@@ -411,12 +411,14 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
     }
 
     for (String permission : permissions) {
+      // If permission is not granted and shouldShowRequestPermissionRationale returns false,
+      // it means user selected "Don't ask again" → need to open settings
       if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED
-        && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
-        return false;
+        && !ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
+        return true;  // Need to open settings
       }
     }
-    return true;
+    return false;  // Can request permission again in app
   }
 
   private void sendPermissionDeniedError(CallbackContext callbackContext, boolean hasGrantResult) {

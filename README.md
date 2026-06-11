@@ -98,6 +98,8 @@ This plugin checks permissions at runtime before opening the capture UI.
 - `captureVideo` requires `CAMERA` and `RECORD_AUDIO`.
 - If `saveToPhotoAlbum` is `true`, the plugin also uses legacy external storage access on Android 9 and below.
 - `hasCapturePermission` and `requestCapturePermission` reflect the permissions needed for the current capture flow.
+- `requestCapturePermission` returns `PERMISSION_DENIED_FIRST_TIME` when permission is denied but can still be re-requested in-app.
+- `requestCapturePermission` returns `PERMISSION_DENIED_NEED_SETTINGS` when permission cannot be resolved in current flow (including dismissed dialog), and users should be guided to app settings.
 - `openAppSettings` opens the app details page so the user can enable permissions manually after a permanent denial.
 
 ### iOS

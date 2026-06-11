@@ -104,6 +104,29 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 @implementation CtyVideoCaptureCordova
 @synthesize inUse;
 
+- (void)cleanupPickerControllerUI:(UIImagePickerController*)picker
+{
+    if (!picker) {
+        return;
+    }
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIViewController* presentingViewController = [picker presentingViewController];
+        if (presentingViewController) {
+            [presentingViewController dismissViewControllerAnimated:YES completion:nil];
+        }
+
+        if (picker.parentViewController) {
+            [picker willMoveToParentViewController:nil];
+            [picker.view removeFromSuperview];
+            [picker removeFromParentViewController];
+        }
+
+        self.webView.opaque = YES;
+        self.webView.backgroundColor = [UIColor whiteColor];
+    });
+}
+
 - (void)pluginInitialize
 {
     self.inUse = NO;
@@ -538,10 +561,19 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
                     }
                     NSLog(@"captureVideo: 将 pickerController 添加到 view hierarchy");
                     [mainStrongSelf.viewController addChildViewController:mainStrongSelf->pickerController];
+                    mainStrongSelf->pickerController.view.frame = mainStrongSelf.webView.superview.bounds;
+                    mainStrongSelf->pickerController.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
                     mainStrongSelf.webView.opaque = NO;
                     mainStrongSelf.webView.backgroundColor = [UIColor clearColor];
                     [mainStrongSelf.webView.superview addSubview:mainStrongSelf->pickerController.view];
                     [mainStrongSelf.webView.superview bringSubviewToFront:mainStrongSelf.webView];
+                    [mainStrongSelf->pickerController didMoveToParentViewController:mainStrongSelf.viewController];
+
+                    // Auto-start recording so captureVideo works as a one-call flow on iOS.
+                    if ([mainStrongSelf->pickerController respondsToSelector:@selector(startVideoCapture)]) {
+                        BOOL didStart = [mainStrongSelf->pickerController startVideoCapture];
+                        NSLog(@"captureVideo: auto startVideoCapture result=%d", didStart);
+                    }
 
                     NSLog(@"captureVideo: pickerController 显示完成");
                     mainStrongSelf.inUse = YES;
@@ -1049,10 +1081,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
-    
-    NSLog(@"didFinishPickingMediaWithInfo: 开始 dismiss picker");
-    [[picker presentingViewController] dismissViewControllerAnimated:YES completion:nil];
-    NSLog(@"didFinishPickingMediaWithInfo: dismiss 完成");
+    [self cleanupPickerControllerUI:picker];
 
     CDVPluginResult* result = nil;
 
@@ -1098,10 +1127,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
-
-    NSLog(@"imagePickerControllerDidCancel: 开始 dismiss picker");
-    [[picker presentingViewController] dismissViewControllerAnimated:YES completion:nil];
-    NSLog(@"imagePickerControllerDidCancel: dismiss 完成");
+    [self cleanupPickerControllerUI:picker];
 
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_NO_MEDIA_FILES];
     [self.commandDelegate sendPluginResult:result callbackId:callbackId];

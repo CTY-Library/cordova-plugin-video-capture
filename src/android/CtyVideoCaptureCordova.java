@@ -321,6 +321,7 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
   public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults)
     throws JSONException {
     Log.d("CtyVideoCapture", "onRequestPermissionResult: requestCode=" + requestCode + ", permissions=" + Arrays.toString(permissions));
+    boolean hasGrantResult = grantResults != null && grantResults.length > 0;
     boolean granted = isAllGranted(grantResults);
 
     if (requestCode == Configuration.REQUEST_CODE_PERMISSIONS) {
@@ -328,14 +329,14 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
         Log.d("CtyVideoCapture", "所有权限已授予，初始化 Fragment");
         this.initFragment(configOption, execingCallbackContext);
       } else {
-        sendPermissionDeniedError(execingCallbackContext);
+        sendPermissionDeniedError(execingCallbackContext, hasGrantResult);
       }
       currentRequestedPermissions = new String[0];
     } else if (requestCode == Configuration.REQUEST_CODE_PERMISSION_ONLY) {
       if (granted) {
         execingCallbackContext.success();
       } else {
-        sendPermissionDeniedError(execingCallbackContext);
+        sendPermissionDeniedError(execingCallbackContext, hasGrantResult);
       }
       currentRequestedPermissions = new String[0];
     } else {
@@ -418,8 +419,15 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
     return true;
   }
 
-  private void sendPermissionDeniedError(CallbackContext callbackContext) {
+  private void sendPermissionDeniedError(CallbackContext callbackContext, boolean hasGrantResult) {
     if (callbackContext == null) {
+      return;
+    }
+
+    if (!hasGrantResult) {
+      sendPermissionError(callbackContext,
+        ERROR_PERMISSION_DENIED_NEED_SETTINGS,
+        "Permission denied. Please open app settings and enable the required permissions.");
       return;
     }
 
@@ -433,6 +441,11 @@ public class CtyVideoCaptureCordova extends CordovaPlugin {
     String message = ERROR_PERMISSION_DENIED_NEED_SETTINGS.equals(code)
       ? "Permission denied. Please open app settings and enable the required permissions."
       : "Permission denied.";
+
+    sendPermissionError(callbackContext, code, message);
+  }
+
+  private void sendPermissionError(CallbackContext callbackContext, String code, String message) {
 
     JSONObject payload = new JSONObject();
     try {

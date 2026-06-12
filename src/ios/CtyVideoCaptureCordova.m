@@ -666,6 +666,13 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     
     NSString* outputPath = [transcode transcodeVideo:moviePath videoFileName: uuidString ];
     
+    NSLog(@"[CtyVideoCaptureCordova] processVideo: inputPath=%@, outputPath=%@, outputPathLength=%lu", moviePath, outputPath, (unsigned long)[outputPath length]);
+    
+    if (!outputPath || [outputPath length] == 0) {
+        NSLog(@"[CtyVideoCaptureCordova] ERROR: Transcode returned empty path. Possible causes: encoding failure, permission issue, or codec incompatibility on this device.");
+        return [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_INTERNAL_ERR];
+    }
+    
     NSDictionary* fileDict = [self getMediaDictionaryFromPath:outputPath ofType:nil];
     NSArray* fileArray = [NSArray arrayWithObject:fileDict];
 

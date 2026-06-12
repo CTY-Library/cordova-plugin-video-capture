@@ -247,9 +247,11 @@
         else
         {
             NSString *error = [NSString stringWithFormat:@"Video export failed with error: %@ (%ld)", encoder.error.localizedDescription, (long)encoder.error.code];
+            NSLog(@"[CtyVideoTranscode] Export failed: %@", error);
            // [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error] callbackId:command.callbackId];
         }
     //}];
+    NSLog(@"[CtyVideoTranscode] transcodeVideo returning empty string, encoder status: %ld", (long)encoder.status);
     return @"";
 }
  

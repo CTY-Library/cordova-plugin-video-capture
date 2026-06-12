@@ -395,12 +395,22 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     if ([pickerController respondsToSelector:@selector(stopVideoCapture)]) {
         NSLog(@"stopVideoCapture: 调用 pickerController.stopVideoCapture()");
         if ([NSThread isMainThread]) {
-            [pickerController stopVideoCapture];
-            NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成 (main thread)");
+            @try {
+                [pickerController stopVideoCapture];
+                NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成 (main thread)");
+            } @catch (NSException *exception) {
+                // iOS 26+/new hardware occasionally throws "This task has already been stopped".
+                // Treat as idempotent stop and continue waiting for didFinish/didCancel callback.
+                NSLog(@"stopVideoCapture: ignored exception on main thread: %@", exception.reason);
+            }
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [pickerController stopVideoCapture];
-                NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成 (dispatched)");
+                @try {
+                    [pickerController stopVideoCapture];
+                    NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成 (dispatched)");
+                } @catch (NSException *exception) {
+                    NSLog(@"stopVideoCapture: ignored exception on dispatched main thread: %@", exception.reason);
+                }
             });
         }
     } else {

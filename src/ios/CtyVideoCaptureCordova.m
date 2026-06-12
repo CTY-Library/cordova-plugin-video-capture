@@ -352,35 +352,10 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     } else {
         NSLog(@"stopVideoCapture: pickerController 不支持 stopVideoCapture 方法");
     }
-    
-    NSLog(@"stopVideoCapture: 开始移除 pickerController");
-    
-    // 处理两种情况：presentViewController 和 addChildViewController
-    UIViewController* presentingViewController = [pickerController presentingViewController];
-    if (presentingViewController) {
-        NSLog(@"stopVideoCapture: 处理 presentViewController 情况");
-        NSLog(@"stopVideoCapture: 调用 dismissViewControllerAnimated");
-        [presentingViewController dismissViewControllerAnimated:YES completion:^{
-            NSLog(@"stopVideoCapture: dismiss 完成");
-        }];
-    } else {
-        NSLog(@"stopVideoCapture: 检查是否是 addChildViewController 情况");
-        // 检查是否有 parentViewController
-        if (pickerController.parentViewController) {
-            NSLog(@"stopVideoCapture: 处理 addChildViewController 情况，移除子视图");
-            [pickerController willMoveToParentViewController:nil];
-            [pickerController.view removeFromSuperview];
-            [pickerController removeFromParentViewController];
-            NSLog(@"stopVideoCapture: 子视图移除完成");
-        } else {
-            NSLog(@"stopVideoCapture: pickerController 既没有 presentingViewController 也没有 parentViewController");
-        }
-    }
-    
-    // 恢复 webView
-    NSLog(@"stopVideoCapture: 恢复 webView");
-    self.webView.opaque = YES;
-    self.webView.backgroundColor = [UIColor whiteColor];
+
+    // UI cleanup must run on main thread; otherwise picker view may remain visible.
+    NSLog(@"stopVideoCapture: 在主线程清理 pickerController UI");
+    [self cleanupPickerControllerUI:pickerController];
     
     // 注意：只有当 didFinishPickingMediaWithInfo 未被调用时，才在这里处理视频
     // 如果已经被处理过（videoProcessed=YES），则跳过处理，避免重复

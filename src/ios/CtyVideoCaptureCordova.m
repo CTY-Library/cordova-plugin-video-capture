@@ -1126,9 +1126,16 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         // mediaType was image
         NSLog(@"didFinishPickingMediaWithInfo: 处理图像");
         result = [self processImage:image type:cameraPicker.mimeType forCallbackId:callbackId];
-    } else if ([mediaType isEqualToString:(NSString*)kUTTypeMovie]) {
-        // process video
-        NSString* moviePath = [(NSURL *)[info objectForKey:UIImagePickerControllerMediaURL] path];
+    } else if ([mediaType isEqualToString:(NSString*)kUTTypeMovie]
+               || [mediaType isEqualToString:(NSString*)kUTTypeVideo]
+               || [mediaType hasPrefix:@"public.movie"]
+               || [mediaType hasPrefix:@"public.mpeg"]
+               || [mediaType hasPrefix:@"com.apple.quicktime"]) {
+        // process video — match both legacy kUTTypeMovie ("com.apple.quicktime-movie") and
+        // newer UTType identifiers ("public.movie", "public.mpeg-4") returned on iOS 14+/26+.
+        NSLog(@"didFinishPickingMediaWithInfo: mediaType=%@", mediaType);
+        NSURL* mediaURL = [info objectForKey:UIImagePickerControllerMediaURL];
+        NSString* moviePath = [mediaURL path];
         NSLog(@"didFinishPickingMediaWithInfo: 处理视频，路径=%@", moviePath);
         if (moviePath) {
             result = [self processVideo:moviePath forCallbackId:callbackId];
@@ -1178,9 +1185,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 
 @end
 
-@interface CDVAudioRecorderViewController () {
-    UIStatusBarStyle _previousStatusBarStyle;
-}
+@interface CDVAudioRecorderViewController ()
 @end
 
 @implementation CDVAudioRecorderViewController
@@ -1213,7 +1218,6 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         self.callbackId = theCallbackId;
         self.errorCode = CAPTURE_NO_MEDIA_FILES;
         self.isTimed = self.duration != nil;
-        _previousStatusBarStyle = [UIApplication sharedApplication].statusBarStyle;
 
         return self;
     }

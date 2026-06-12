@@ -354,7 +354,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     }
 
     // UI cleanup must run on main thread; otherwise picker view may remain visible.
-    NSLog(@"stopVideoCapture: 在主线程清理 pickerController UI");
+    NSLog(@"stopVideoCapture: on main thread, cleaning up pickerController UI");
     [self cleanupPickerControllerUI:pickerController];
     
     // 注意：只有当 didFinishPickingMediaWithInfo 未被调用时，才在这里处理视频

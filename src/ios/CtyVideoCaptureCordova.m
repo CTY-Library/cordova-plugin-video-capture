@@ -1114,7 +1114,9 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
-    [self cleanupPickerControllerUI:picker];
+    // NOTE: Do NOT cleanup picker UI before processVideo. On ProRes-capable devices (iPhone 15 Pro+),
+    // removing the child VC tears down the underlying AV hardware session before the export
+    // completes, causing AVAssetExportSessionStatusCancelled. Cleanup happens after processing.
 
     CDVPluginResult* result = nil;
 
@@ -1130,7 +1132,8 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         }
     }
     if (image != nil) {
-        // mediaType was image
+        // mediaType was image — cleanup UI first (no AV session dependency)
+        [self cleanupPickerControllerUI:picker];
         NSLog(@"didFinishPickingMediaWithInfo: 处理图像");
         result = [self processImage:image type:cameraPicker.mimeType forCallbackId:callbackId];
     } else if ([mediaType isEqualToString:(NSString*)kUTTypeMovie]
@@ -1145,8 +1148,13 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         NSString* moviePath = [mediaURL path];
         NSLog(@"didFinishPickingMediaWithInfo: 处理视频，路径=%@", moviePath);
         if (moviePath) {
+            // Process video BEFORE cleaning up picker UI so ProRes hardware session stays alive
             result = [self processVideo:moviePath forCallbackId:callbackId];
         }
+        // Now safe to cleanup picker UI — export session has completed (or failed)
+        [self cleanupPickerControllerUI:picker];
+    } else {
+        [self cleanupPickerControllerUI:picker];
     }
     if (!result) {
         NSLog(@"didFinishPickingMediaWithInfo: 结果为空，返回错误");

@@ -88,13 +88,10 @@
             break;
     }
 
-    // check if the video can be saved to photo album before going further
-    if (self.saveToPhotoAlbum && !UIVideoAtPathIsCompatibleWithSavedPhotosAlbum([inputFileURL path]))
-    {
-        NSString *error = @"Video cannot be saved to photo album";
-//        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error ] callbackId:command.callbackId];
-        return @"";
-    }
+    // Skip UIVideoAtPathIsCompatibleWithSavedPhotosAlbum check: it returns NO for ProRes files
+    // on iPhone 15 Pro+ / iPhone 17, causing premature empty-string return before any transcode.
+    // Saving to photo album is handled after export completes, using UISaveVideoAtPathToSavedPhotosAlbum
+    // on the transcoded output path (H264 mp4) which is always compatible.
 
     AVURLAsset *avAsset = [AVURLAsset URLAssetWithURL:inputFileURL options:nil];
 

@@ -314,11 +314,56 @@
         {
             NSString *error = [NSString stringWithFormat:@"Video export failed with error: %@ (%ld)", encoder.error.localizedDescription, (long)encoder.error.code];
             NSLog(@"[CtyVideoTranscode] Export failed: %@", error);
-           // [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error] callbackId:command.callbackId];
         }
     //}];
-    NSLog(@"[CtyVideoTranscode] transcodeVideo returning empty string, encoder status: %ld", (long)encoder.status);
-    return @"";
+        NSLog(@"[CtyVideoTranscode] transcodeVideo returning empty string, encoder status: %ld, will try fallback", (long)encoder.status);
+
+        // ---- Fallback: CtyAVAssetExportSession failed (likely codec incompatibility on newer hardware).
+        // Remove the failed output file if it exists, then retry with system AVAssetExportSession.
+        [[NSFileManager defaultManager] removeItemAtURL:outputURL error:nil];
+
+        NSLog(@"[CtyVideoTranscode] Fallback: using AVAssetExportSession with HighestQuality preset");
+
+        NSString *presetName = AVAssetExportPresetHighestQuality;
+        if (self.width > 0 || self.height > 0) {
+            float maxDim = MAX(self.width, self.height);
+            if (maxDim > 0 && maxDim <= 480) {
+                presetName = AVAssetExportPresetLowQuality;
+            } else if (maxDim > 0 && maxDim <= 960) {
+                presetName = AVAssetExportPresetMediumQuality;
+            }
+        }
+
+        // Rebuild output path with different suffix to avoid file conflict
+        NSString *fallbackOutputPath = [NSString stringWithFormat:@"%@/%@_fb%@", cacheDir, videoFileName, outputExtension];
+        NSURL *fallbackOutputURL = [NSURL fileURLWithPath:fallbackOutputPath];
+
+        __block NSString *fallbackResult = @"";
+        dispatch_semaphore_t fallbackSema = dispatch_semaphore_create(0);
+
+        AVAssetExportSession *fallbackSession = [[AVAssetExportSession alloc]
+                                                 initWithAsset:avAsset
+                                                 presetName:presetName];
+        fallbackSession.outputFileType = AVFileTypeMPEG4;
+        fallbackSession.outputURL = fallbackOutputURL;
+        fallbackSession.shouldOptimizeForNetworkUse = self.optimizeForNetworkUse;
+
+        [fallbackSession exportAsynchronouslyWithCompletionHandler:^{
+            if (fallbackSession.status == AVAssetExportSessionStatusCompleted) {
+                NSLog(@"[CtyVideoTranscode] Fallback export succeeded: %@", fallbackOutputPath);
+                if (self.saveToPhotoAlbum) {
+                    UISaveVideoAtPathToSavedPhotosAlbum(fallbackOutputPath, self, nil, nil);
+                }
+                fallbackResult = fallbackOutputPath;
+            } else {
+                NSLog(@"[CtyVideoTranscode] Fallback export also failed: %@ (%ld)",
+                      fallbackSession.error.localizedDescription, (long)fallbackSession.status);
+            }
+            dispatch_semaphore_signal(fallbackSema);
+        }];
+
+        dispatch_semaphore_wait(fallbackSema, DISPATCH_TIME_FOREVER);
+        return fallbackResult;
 }
  
 

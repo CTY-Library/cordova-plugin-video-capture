@@ -393,11 +393,16 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     // Stop recording on main thread. Do not cleanup picker here; wait for
     // didFinishPickingMediaWithInfo to process video and close UI.
     if ([pickerController respondsToSelector:@selector(stopVideoCapture)]) {
-        NSLog(@"stopVideoCapture: 调用 pickerController.stopVideoCapture() on main thread");
-        dispatch_async(dispatch_get_main_queue(), ^{
+        NSLog(@"stopVideoCapture: 调用 pickerController.stopVideoCapture()");
+        if ([NSThread isMainThread]) {
             [pickerController stopVideoCapture];
-            NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成");
-        });
+            NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成 (main thread)");
+        } else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [pickerController stopVideoCapture];
+                NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成 (dispatched)");
+            });
+        }
     } else {
         NSLog(@"stopVideoCapture: pickerController 不支持 stopVideoCapture 方法");
     }
@@ -1126,9 +1131,6 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         NSString* moviePath = [(NSURL *)[info objectForKey:UIImagePickerControllerMediaURL] path];
         NSLog(@"didFinishPickingMediaWithInfo: 处理视频，路径=%@", moviePath);
         if (moviePath) {
-            // Store the recorded video path and mark as processed
-            cameraPicker.recordedVideoPath = moviePath;
-            cameraPicker.videoProcessed = YES;
             result = [self processVideo:moviePath forCallbackId:callbackId];
         }
     }

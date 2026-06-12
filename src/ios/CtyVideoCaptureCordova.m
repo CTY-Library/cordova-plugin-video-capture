@@ -21,6 +21,7 @@
 #import "CDVFile.h"
 #import <Cordova/CDVAvailability.h>
 #import <Photos/Photos.h>
+#import <objc/runtime.h>
 
 
 #define kW3CMediaFormatHeight @"height"
@@ -36,6 +37,7 @@ static NSString * const CtyVideoCaptureErrorPermissionRestricted = @"PERMISSION_
 static NSString * const CtyVideoCaptureErrorPermissionStateUnresolved = @"PERMISSION_STATE_UNRESOLVED";
 static NSString * const CtyVideoCaptureErrorOpenSettingsFailed = @"OPEN_SETTINGS_FAILED";
 static const NSTimeInterval CtyVideoCaptureStopFallbackTimeoutSeconds = 8.0;
+static const void *kCtyVideoCaptureSessionTokenKey = &kCtyVideoCaptureSessionTokenKey;
 
 static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 {
@@ -65,8 +67,6 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 #define PluginLocalizedString(plugin, key, comment) [[NSBundle pluginBundle:(plugin)] localizedStringForKey:(key) value:nil table:nil]
 
 @implementation CDVImagePicker
-
-
 
 @synthesize quality;
 @synthesize callbackId;
@@ -107,6 +107,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 @property (atomic, assign) BOOL awaitingVideoStopResult;
 @property (atomic, copy) NSString* awaitingVideoCallbackId;
 @property (atomic, assign) BOOL isVideoRecording;
+@property (atomic, assign) NSInteger activeVideoSessionToken;
 @end
 
 @implementation CtyVideoCaptureCordova
@@ -142,17 +143,39 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     self.awaitingVideoStopResult = NO;
     self.awaitingVideoCallbackId = nil;
     self.isVideoRecording = NO;
+    self.activeVideoSessionToken = 0;
 }
 
-- (void)armStopVideoFallbackWithCallbackId:(NSString*)callbackId
+- (void)setSessionToken:(NSInteger)sessionToken forPicker:(UIImagePickerController*)picker
+{
+    if (!picker) {
+        return;
+    }
+    objc_setAssociatedObject(picker, kCtyVideoCaptureSessionTokenKey, @(sessionToken), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSInteger)sessionTokenForPicker:(UIImagePickerController*)picker
+{
+    if (!picker) {
+        return 0;
+    }
+    NSNumber* token = objc_getAssociatedObject(picker, kCtyVideoCaptureSessionTokenKey);
+    return token.integerValue;
+}
+
+- (void)armStopVideoFallbackWithCallbackId:(NSString*)callbackId sessionToken:(NSInteger)sessionToken
 {
     self.awaitingVideoStopResult = YES;
     self.awaitingVideoCallbackId = callbackId;
     self.stopVideoFallbackToken += 1;
 
-    NSInteger token = self.stopVideoFallbackToken;
+    NSInteger fallbackToken = self.stopVideoFallbackToken;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(CtyVideoCaptureStopFallbackTimeoutSeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        if (!self.awaitingVideoStopResult || token != self.stopVideoFallbackToken) {
+        if (!self.awaitingVideoStopResult || fallbackToken != self.stopVideoFallbackToken) {
+            return;
+        }
+        if (sessionToken != self.activeVideoSessionToken) {
+            NSLog(@"stopVideoCapture fallback ignored: stale session token=%ld active=%ld", (long)sessionToken, (long)self.activeVideoSessionToken);
             return;
         }
 
@@ -167,14 +190,16 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
             [self.commandDelegate sendPluginResult:result callbackId:pendingCallbackId];
         }
 
-        if (pickerController != nil) {
+        if (pickerController != nil && [self sessionTokenForPicker:pickerController] == sessionToken) {
             [self cleanupPickerControllerUI:pickerController];
             pickerController = nil;
         }
+
         self.isVideoRecording = NO;
         self.inUse = NO;
     });
 }
+
 
 - (void)disarmStopVideoFallback
 {
@@ -434,7 +459,8 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     NSLog(@"stopVideoCapture: 开始停止录制");
 
     NSString* callbackId = [(CDVImagePicker*)pickerController callbackId];
-    [self armStopVideoFallbackWithCallbackId:callbackId];
+        NSInteger sessionToken = [self sessionTokenForPicker:pickerController];
+        [self armStopVideoFallbackWithCallbackId:callbackId sessionToken:sessionToken];
     self.isVideoRecording = NO;
     
     // Stop recording on main thread. Do not cleanup picker here; wait for
@@ -484,6 +510,8 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 
     // Lock early to avoid re-entrancy while permissions/UI setup are still async.
     self.inUse = YES;
+    self.activeVideoSessionToken += 1;
+    NSInteger sessionToken = self.activeVideoSessionToken;
     
     NSString* callbackId = command.callbackId;
     NSDictionary* options = [command argumentAtIndex:0];
@@ -506,6 +534,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         // there is a camera, it is available, make sure it can do movies
         NSLog(@"captureVideo: 相机可用，创建 pickerController");
         pickerController = [[CDVImagePicker alloc] init];
+        [self setSessionToken:sessionToken forPicker:pickerController];
         
         
 
@@ -1185,6 +1214,12 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info
 {
     NSLog(@"===== imagePickerController didFinishPickingMediaWithInfo START =====");
+    NSInteger callbackSessionToken = [self sessionTokenForPicker:picker];
+    if (callbackSessionToken != 0 && callbackSessionToken != self.activeVideoSessionToken) {
+        NSLog(@"didFinishPickingMediaWithInfo: ignore stale callback token=%ld active=%ld", (long)callbackSessionToken, (long)self.activeVideoSessionToken);
+        return;
+    }
+
     [self disarmStopVideoFallback];
     self.isVideoRecording = NO;
     
@@ -1195,6 +1230,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     // completes, causing AVAssetExportSessionStatusCancelled. Cleanup happens after processing.
 
     CDVPluginResult* result = nil;
+
 
     UIImage* image = nil;
     NSString* mediaType = [info objectForKey:UIImagePickerControllerMediaType];
@@ -1249,6 +1285,13 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)imagePickerControllerDidCancel:(UIImagePickerController*)picker
 {
     NSLog(@"===== imagePickerControllerDidCancel START =====");
+
+    NSInteger callbackSessionToken = [self sessionTokenForPicker:picker];
+    if (callbackSessionToken != 0 && callbackSessionToken != self.activeVideoSessionToken) {
+        NSLog(@"imagePickerControllerDidCancel: ignore stale callback token=%ld active=%ld", (long)callbackSessionToken, (long)self.activeVideoSessionToken);
+        return;
+    }
+
     [self disarmStopVideoFallback];
     self.isVideoRecording = NO;
     

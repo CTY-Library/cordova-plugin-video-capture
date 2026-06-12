@@ -106,6 +106,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 @property (atomic, assign) NSInteger stopVideoFallbackToken;
 @property (atomic, assign) BOOL awaitingVideoStopResult;
 @property (atomic, copy) NSString* awaitingVideoCallbackId;
+@property (atomic, assign) BOOL isVideoRecording;
 @end
 
 @implementation CtyVideoCaptureCordova
@@ -140,6 +141,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     self.stopVideoFallbackToken = 0;
     self.awaitingVideoStopResult = NO;
     self.awaitingVideoCallbackId = nil;
+    self.isVideoRecording = NO;
 }
 
 - (void)armStopVideoFallbackWithCallbackId:(NSString*)callbackId
@@ -169,6 +171,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
             [self cleanupPickerControllerUI:pickerController];
             pickerController = nil;
         }
+        self.isVideoRecording = NO;
         self.inUse = NO;
     });
 }
@@ -358,6 +361,14 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         NSLog(@"===== iOS startVideoCapture END (pickerController为空) =====");
         return;
     }
+
+    if (self.isVideoRecording) {
+        NSLog(@"startVideoCapture: 已处于录制中，忽略重复 start");
+        CDVPluginResult* startedResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"1"];
+        [self.commandDelegate sendPluginResult:startedResult callbackId:command.callbackId];
+        NSLog(@"===== iOS startVideoCapture END (已在录制) =====");
+        return;
+    }
     
     NSLog(@"startVideoCapture: 开始启动视频录制");
     
@@ -379,6 +390,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     }
     
     self.inUse = YES;
+    self.isVideoRecording = is_start;
     
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"%d", is_start]];
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
@@ -405,11 +417,20 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         NSLog(@"===== iOS stopVideoCapture END (pickerController为空) =====");
         return;
     }
+
+    if (!self.isVideoRecording) {
+        NSLog(@"stopVideoCapture: 当前不在录制中，忽略 stop 调用");
+        CDVPluginResult* idleResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+        [self.commandDelegate sendPluginResult:idleResult callbackId:command.callbackId];
+        NSLog(@"===== iOS stopVideoCapture END (非录制态) =====");
+        return;
+    }
     
     NSLog(@"stopVideoCapture: 开始停止录制");
 
     NSString* callbackId = [(CDVImagePicker*)pickerController callbackId];
     [self armStopVideoFallbackWithCallbackId:callbackId];
+    self.isVideoRecording = NO;
     
     // Stop recording on main thread. Do not cleanup picker here; wait for
     // didFinishPickingMediaWithInfo to process video and close UI.
@@ -642,6 +663,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
                             NSLog(@"captureVideo: auto startVideoCapture exception=%@", exception.reason);
                             didStart = NO;
                         }
+                        mainStrongSelf.isVideoRecording = didStart;
                         NSLog(@"captureVideo: auto startVideoCapture result=%d", didStart);
                     }
 
@@ -1156,6 +1178,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 {
     NSLog(@"===== imagePickerController didFinishPickingMediaWithInfo START =====");
     [self disarmStopVideoFallback];
+    self.isVideoRecording = NO;
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
@@ -1209,6 +1232,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     
     NSLog(@"didFinishPickingMediaWithInfo: 释放 pickerController");
     pickerController = nil;
+    self.isVideoRecording = NO;
     self.inUse = NO;
     
     NSLog(@"===== imagePickerController didFinishPickingMediaWithInfo END =====");
@@ -1218,6 +1242,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 {
     NSLog(@"===== imagePickerControllerDidCancel START =====");
     [self disarmStopVideoFallback];
+    self.isVideoRecording = NO;
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
@@ -1228,6 +1253,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     
     NSLog(@"imagePickerControllerDidCancel: 释放 pickerController");
     pickerController = nil;
+    self.isVideoRecording = NO;
     self.inUse = NO;
     
     NSLog(@"===== imagePickerControllerDidCancel END =====");

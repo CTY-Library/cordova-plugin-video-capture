@@ -355,56 +355,61 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     
     NSLog(@"stopVideoCapture: 开始移除 pickerController");
     
-    // 处理两种情况：presentViewController 和 addChildViewController
-    UIViewController* presentingViewController = [pickerController presentingViewController];
-    if (presentingViewController) {
-        NSLog(@"stopVideoCapture: 处理 presentViewController 情况");
-        NSLog(@"stopVideoCapture: 调用 dismissViewControllerAnimated");
-        [presentingViewController dismissViewControllerAnimated:YES completion:^{
-            NSLog(@"stopVideoCapture: dismiss 完成");
-        }];
-    } else {
-        NSLog(@"stopVideoCapture: 检查是否是 addChildViewController 情况");
-        // 检查是否有 parentViewController
-        if (pickerController.parentViewController) {
+    // 所有 UIKit 视图操作必须在主线程执行，确保页面正确关闭
+    __weak CtyVideoCaptureCordova* weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        __strong CtyVideoCaptureCordova* strongSelf = weakSelf;
+        if (!strongSelf) {
+            return;
+        }
+        
+        // 处理两种情况：presentViewController 和 addChildViewController
+        // 注意：不使用 if-else，因为两种方式可能同时存在
+        UIViewController* presentingViewController = [strongSelf->pickerController presentingViewController];
+        if (presentingViewController) {
+            NSLog(@"stopVideoCapture: 处理 presentViewController 情况");
+            [presentingViewController dismissViewControllerAnimated:YES completion:^{
+                NSLog(@"stopVideoCapture: dismiss 完成");
+            }];
+        }
+        
+        if (strongSelf->pickerController.parentViewController) {
             NSLog(@"stopVideoCapture: 处理 addChildViewController 情况，移除子视图");
-            [pickerController willMoveToParentViewController:nil];
-            [pickerController.view removeFromSuperview];
-            [pickerController removeFromParentViewController];
+            [strongSelf->pickerController willMoveToParentViewController:nil];
+            [strongSelf->pickerController.view removeFromSuperview];
+            [strongSelf->pickerController removeFromParentViewController];
             NSLog(@"stopVideoCapture: 子视图移除完成");
-        } else {
-            NSLog(@"stopVideoCapture: pickerController 既没有 presentingViewController 也没有 parentViewController");
         }
-    }
-    
-    // 恢复 webView
-    NSLog(@"stopVideoCapture: 恢复 webView");
-    self.webView.opaque = YES;
-    self.webView.backgroundColor = [UIColor whiteColor];
-    
-    // 注意：只有当 didFinishPickingMediaWithInfo 未被调用时，才在这里处理视频
-    // 如果已经被处理过（videoProcessed=YES），则跳过处理，避免重复
-    CDVPluginResult* result = nil;
-    CDVImagePicker* pickerForCheck = (CDVImagePicker*)pickerController;
-    if (pickerForCheck && !pickerForCheck.videoProcessed && recordedVideoPath && recordedVideoPath.length > 0) {
-        NSLog(@"stopVideoCapture: 处理录制的视频（didFinishPickingMediaWithInfo 未被调用），路径=%@", recordedVideoPath);
-        result = [self processVideo:recordedVideoPath forCallbackId:callbackId];
-        [self.commandDelegate sendPluginResult:result callbackId:callbackId];
-    } else {
-        if (pickerForCheck && pickerForCheck.videoProcessed) {
-            NSLog(@"stopVideoCapture: 视频已在 didFinishPickingMediaWithInfo 中处理，跳过重复处理");
+        
+        // 恢复 webView
+        NSLog(@"stopVideoCapture: 恢复 webView");
+        strongSelf.webView.opaque = YES;
+        strongSelf.webView.backgroundColor = [UIColor whiteColor];
+        
+        // 注意：只有当 didFinishPickingMediaWithInfo 未被调用时，才在这里处理视频
+        // 如果已经被处理过（videoProcessed=YES），则跳过处理，避免重复
+        CDVPluginResult* result = nil;
+        CDVImagePicker* pickerForCheck = (CDVImagePicker*)strongSelf->pickerController;
+        if (pickerForCheck && !pickerForCheck.videoProcessed && recordedVideoPath && recordedVideoPath.length > 0) {
+            NSLog(@"stopVideoCapture: 处理录制的视频（didFinishPickingMediaWithInfo 未被调用），路径=%@", recordedVideoPath);
+            result = [strongSelf processVideo:recordedVideoPath forCallbackId:callbackId];
+            [strongSelf.commandDelegate sendPluginResult:result callbackId:callbackId];
         } else {
-            NSLog(@"stopVideoCapture: 未找到未处理的视频路径");
+            if (pickerForCheck && pickerForCheck.videoProcessed) {
+                NSLog(@"stopVideoCapture: 视频已在 didFinishPickingMediaWithInfo 中处理，跳过重复处理");
+            } else {
+                NSLog(@"stopVideoCapture: 未找到未处理的视频路径");
+            }
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+            [strongSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         }
-        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
-        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-    }
-    
-    NSLog(@"stopVideoCapture: 释放 pickerController");
-    pickerController = nil;
-    self.inUse = NO;
-    
-    NSLog(@"===== iOS stopVideoCapture END =====");
+        
+        NSLog(@"stopVideoCapture: 释放 pickerController");
+        strongSelf->pickerController = nil;
+        strongSelf.inUse = NO;
+        
+        NSLog(@"===== iOS stopVideoCapture END =====");
+    });
 }
 
 - (void)captureVideo:(CDVInvokedUrlCommand*)command

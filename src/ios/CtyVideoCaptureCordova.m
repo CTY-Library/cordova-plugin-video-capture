@@ -419,11 +419,10 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     }
 
     if (!self.isVideoRecording) {
-        NSLog(@"stopVideoCapture: 当前不在录制中，忽略 stop 调用");
-        CDVPluginResult* idleResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
-        [self.commandDelegate sendPluginResult:idleResult callbackId:command.callbackId];
-        NSLog(@"===== iOS stopVideoCapture END (非录制态) =====");
-        return;
+        // Do not early-return here: on some iOS versions/devices the internal capture task may
+        // already be auto-stopped while picker UI is still on screen. We still need a safe stop
+        // attempt to drive didFinish/didCancel (or fallback) and close the camera UI.
+        NSLog(@"stopVideoCapture: 当前非录制态，继续执行安全 stop 以关闭界面");
     }
     
     NSLog(@"stopVideoCapture: 开始停止录制");
@@ -476,6 +475,9 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         NSLog(@"===== iOS captureVideo END (busy) =====");
         return;
     }
+
+    // Lock early to avoid re-entrancy while permissions/UI setup are still async.
+    self.inUse = YES;
     
     NSString* callbackId = command.callbackId;
     NSDictionary* options = [command argumentAtIndex:0];
@@ -524,6 +526,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         [self.commandDelegate sendPluginResult:result callbackId:callbackId];
         NSLog(@"captureVideo: 清空 pickerController");
         pickerController = nil;
+        self.inUse = NO;
         NSLog(@"===== iOS captureVideo END (video mode 不可用) =====");
     } else {
         pickerController.delegate = self;
@@ -668,7 +671,6 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
                     }
 
                     NSLog(@"captureVideo: pickerController 显示完成");
-                    mainStrongSelf.inUse = YES;
                     NSLog(@"===== iOS captureVideo END (成功) =====");
                 });
             }];

@@ -342,6 +342,14 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)startVideoCapture:(CDVInvokedUrlCommand*)command
 {
     NSLog(@"===== iOS startVideoCapture START =====");
+
+    if (self.awaitingVideoStopResult) {
+        NSLog(@"startVideoCapture: 上一次 stop 尚未完成，忽略本次启动");
+        CDVPluginResult* busyResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"0"];
+        [self.commandDelegate sendPluginResult:busyResult callbackId:command.callbackId];
+        NSLog(@"===== iOS startVideoCapture END (stop进行中) =====");
+        return;
+    }
     
     if (pickerController == nil) {
         NSLog(@"startVideoCapture: pickerController 为空");
@@ -358,7 +366,12 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     // 调用startVideoCapture如果存在
     if ([pickerController respondsToSelector:@selector(startVideoCapture)]) {
         NSLog(@"startVideoCapture: 调用 pickerController.startVideoCapture()");
-        is_start = [pickerController startVideoCapture];
+        @try {
+            is_start = [pickerController startVideoCapture];
+        } @catch (NSException *exception) {
+            NSLog(@"startVideoCapture: 捕获异常=%@", exception.reason);
+            is_start = NO;
+        }
         NSLog(@"startVideoCapture: pickerController.startVideoCapture() 返回=%d", is_start);
     } else {
         NSLog(@"startVideoCapture: pickerController 不支持 startVideoCapture 方法");
@@ -376,6 +389,14 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)stopVideoCapture:(CDVInvokedUrlCommand*)command
 {
     NSLog(@"===== iOS stopVideoCapture START =====");
+
+    if (self.awaitingVideoStopResult) {
+        NSLog(@"stopVideoCapture: 已在停止流程中，忽略重复 stop");
+        CDVPluginResult* duplicateResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+        [self.commandDelegate sendPluginResult:duplicateResult callbackId:command.callbackId];
+        NSLog(@"===== iOS stopVideoCapture END (重复调用) =====");
+        return;
+    }
     
     if (pickerController == nil) {
         NSLog(@"stopVideoCapture: pickerController 为空");
@@ -426,6 +447,14 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)captureVideo:(CDVInvokedUrlCommand*)command
 {
     NSLog(@"===== iOS captureVideo START =====");
+
+    if (self.inUse || pickerController != nil || self.awaitingVideoStopResult) {
+        NSLog(@"captureVideo: 插件忙，拒绝并发录制请求");
+        CDVPluginResult* busyResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_APPLICATION_BUSY];
+        [self.commandDelegate sendPluginResult:busyResult callbackId:command.callbackId];
+        NSLog(@"===== iOS captureVideo END (busy) =====");
+        return;
+    }
     
     NSString* callbackId = command.callbackId;
     NSDictionary* options = [command argumentAtIndex:0];
@@ -606,7 +635,13 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 
                     // Auto-start recording so captureVideo works as a one-call flow on iOS.
                     if ([mainStrongSelf->pickerController respondsToSelector:@selector(startVideoCapture)]) {
-                        BOOL didStart = [mainStrongSelf->pickerController startVideoCapture];
+                        BOOL didStart = NO;
+                        @try {
+                            didStart = [mainStrongSelf->pickerController startVideoCapture];
+                        } @catch (NSException *exception) {
+                            NSLog(@"captureVideo: auto startVideoCapture exception=%@", exception.reason);
+                            didStart = NO;
+                        }
                         NSLog(@"captureVideo: auto startVideoCapture result=%d", didStart);
                     }
 

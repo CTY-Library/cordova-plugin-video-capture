@@ -100,7 +100,76 @@
     NSURL *outputURL = [NSURL fileURLWithPath:outputPath];
 
     NSArray *tracks = [avAsset tracksWithMediaType:AVMediaTypeVideo];
+    if (tracks.count == 0) {
+        NSLog(@"[CtyVideoTranscode] No video tracks found in asset: %@", inputFilePath);
+        return @"";
+    }
     AVAssetTrack *track = [tracks objectAtIndex:0];
+
+    // Detect ProRes input: manual H264 encoding settings are not compatible with ProRes source.
+    // If the input is ProRes, fall through to AVAssetExportSession with a quality preset instead.
+    BOOL isProRes = NO;
+    NSArray *formatDescriptions = track.formatDescriptions;
+    for (id desc in formatDescriptions) {
+        CMFormatDescriptionRef formatDesc = (__bridge CMFormatDescriptionRef)desc;
+        CMVideoCodecType codecType = CMVideoFormatDescriptionGetCodecType(formatDesc);
+        if (codecType == kCMVideoCodecType_AppleProRes4444 ||
+            codecType == kCMVideoCodecType_AppleProRes422  ||
+            codecType == kCMVideoCodecType_AppleProRes422HQ ||
+            codecType == kCMVideoCodecType_AppleProRes422LT ||
+            codecType == kCMVideoCodecType_AppleProRes422Proxy) {
+            isProRes = YES;
+            break;
+        }
+    }
+
+    if (isProRes) {
+        // ProRes → use AVAssetExportSession with system preset.
+        // Custom H264 compression settings cause -11800 (AVErrorOperationNotSupportedForAsset)
+        // when the source is ProRes on iPhone 15 Pro / 17 series.
+        NSLog(@"[CtyVideoTranscode] ProRes source detected, using AVAssetExportSession preset path");
+
+        NSString *presetName = AVAssetExportPresetHighestQuality;
+        if (self.width > 0 || self.height > 0) {
+            // Pick a sensible preset when caller requests a size reduction
+            float maxDim = MAX(self.width, self.height);
+            if (maxDim > 0 && maxDim <= 480) {
+                presetName = AVAssetExportPresetLowQuality;
+            } else if (maxDim > 0 && maxDim <= 960) {
+                presetName = AVAssetExportPresetMediumQuality;
+            }
+        }
+
+        __block BOOL exportDone = NO;
+        __block NSString *exportResult = @"";
+        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+
+        AVAssetExportSession *exportSession = [[AVAssetExportSession alloc]
+                                               initWithAsset:avAsset
+                                               presetName:presetName];
+        exportSession.outputFileType = AVFileTypeMPEG4;
+        exportSession.outputURL = outputURL;
+        exportSession.shouldOptimizeForNetworkUse = self.optimizeForNetworkUse;
+
+        [exportSession exportAsynchronouslyWithCompletionHandler:^{
+            if (exportSession.status == AVAssetExportSessionStatusCompleted) {
+                NSLog(@"[CtyVideoTranscode] ProRes export succeeded: %@", outputPath);
+                if (self.saveToPhotoAlbum) {
+                    UISaveVideoAtPathToSavedPhotosAlbum(outputPath, self, nil, nil);
+                }
+                exportResult = outputPath;
+            } else {
+                NSLog(@"[CtyVideoTranscode] ProRes export failed: %@ (%ld)",
+                      exportSession.error.localizedDescription, (long)exportSession.status);
+            }
+            exportDone = YES;
+            dispatch_semaphore_signal(sema);
+        }];
+
+        dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+        return exportResult;
+    }
+
     CGSize mediaSize = track.naturalSize;
 
     float videoWidth = mediaSize.width;

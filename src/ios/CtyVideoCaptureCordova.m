@@ -419,10 +419,16 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     }
 
     if (!self.isVideoRecording) {
-        // Do not early-return here: on some iOS versions/devices the internal capture task may
-        // already be auto-stopped while picker UI is still on screen. We still need a safe stop
-        // attempt to drive didFinish/didCancel (or fallback) and close the camera UI.
-        NSLog(@"stopVideoCapture: 当前非录制态，继续执行安全 stop 以关闭界面");
+        // Not recording: close UI immediately instead of waiting for didFinish/fallback timeout
+        NSLog(@"stopVideoCapture: 当前非录制态，直接关闭");
+        [self cleanupPickerControllerUI:pickerController];
+        pickerController = nil;
+        self.inUse = NO;
+        
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+        NSLog(@"===== iOS stopVideoCapture END (非录制快速关) =====");
+        return;
     }
     
     NSLog(@"stopVideoCapture: 开始停止录制");

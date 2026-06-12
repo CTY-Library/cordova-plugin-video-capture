@@ -341,8 +341,17 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     NSString* callbackId = [(CDVImagePicker*)pickerController callbackId];
     NSLog(@"stopVideoCapture: 开始停止录制，callbackId=%@", callbackId);
     
-    // Store video path if available before cleaning up
-    NSString* recordedVideoPath = [(CDVImagePicker*)pickerController recordedVideoPath];
+    // 在 stopVideoCapture 之前，记录临时目录中已有的视频文件
+    NSString* tmpDir = NSTemporaryDirectory();
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSArray* beforeFiles = [fm contentsOfDirectoryAtPath:tmpDir error:nil];
+    NSMutableSet* beforeVideos = [NSMutableSet set];
+    for (NSString* f in beforeFiles) {
+        NSString* ext = [f pathExtension];
+        if ([ext caseInsensitiveCompare:@"mov"] == NSOrderedSame || [ext caseInsensitiveCompare:@"mp4"] == NSOrderedSame) {
+            [beforeVideos addObject:f];
+        }
+    }
     
     // 调用stopVideoCapture如果存在
     if ([pickerController respondsToSelector:@selector(stopVideoCapture)]) {
@@ -351,6 +360,24 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成");
     } else {
         NSLog(@"stopVideoCapture: pickerController 不支持 stopVideoCapture 方法");
+    }
+
+    // 尝试从 pickerController 获取视频路径（didFinishPickingMediaWithInfo 可能已设置）
+    NSString* recordedVideoPath = [(CDVImagePicker*)pickerController recordedVideoPath];
+    
+    // 如果 recordedVideoPath 为空，在临时目录中扫描 stopVideoCapture 后新增的视频文件
+    if (!recordedVideoPath || recordedVideoPath.length == 0) {
+        NSArray* afterFiles = [fm contentsOfDirectoryAtPath:tmpDir error:nil];
+        for (NSString* f in afterFiles) {
+            NSString* ext = [f pathExtension];
+            if ([ext caseInsensitiveCompare:@"mov"] == NSOrderedSame || [ext caseInsensitiveCompare:@"mp4"] == NSOrderedSame) {
+                if (![beforeVideos containsObject:f]) {
+                    recordedVideoPath = [tmpDir stringByAppendingPathComponent:f];
+                    NSLog(@"stopVideoCapture: 在临时目录中找到新增视频文件=%@", recordedVideoPath);
+                    break;
+                }
+            }
+        }
     }
 
     // UI cleanup must run on main thread; otherwise picker view may remain visible.
@@ -362,15 +389,22 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
     CDVPluginResult* result = nil;
     CDVImagePicker* pickerForCheck = (CDVImagePicker*)pickerController;
     if (pickerForCheck && !pickerForCheck.videoProcessed && recordedVideoPath && recordedVideoPath.length > 0) {
-        NSLog(@"stopVideoCapture: 处理录制的视频（didFinishPickingMediaWithInfo 未被调用），路径=%@", recordedVideoPath);
+        NSLog(@"stopVideoCapture: 处理录制的视频，路径=%@", recordedVideoPath);
         result = [self processVideo:recordedVideoPath forCallbackId:callbackId];
         [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+        // 同时给 stopVideoCapture 自己的 callback 发送成功结果
+        CDVPluginResult* stopResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+        [self.commandDelegate sendPluginResult:stopResult callbackId:command.callbackId];
     } else {
         if (pickerForCheck && pickerForCheck.videoProcessed) {
             NSLog(@"stopVideoCapture: 视频已在 didFinishPickingMediaWithInfo 中处理，跳过重复处理");
         } else {
             NSLog(@"stopVideoCapture: 未找到未处理的视频路径");
         }
+        // 给 captureVideo 的 callback 也发送结果，避免 JS 端 Promise 永远 pending
+        CDVPluginResult* captureResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No video captured"];
+        [self.commandDelegate sendPluginResult:captureResult callbackId:callbackId];
+        // 给 stopVideoCapture 的 callback 发送结果
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
     }

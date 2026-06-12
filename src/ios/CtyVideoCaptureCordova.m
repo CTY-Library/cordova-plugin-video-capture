@@ -35,6 +35,7 @@ static NSString * const CtyVideoCaptureErrorPermissionDeniedNeedSettings = @"PER
 static NSString * const CtyVideoCaptureErrorPermissionRestricted = @"PERMISSION_RESTRICTED";
 static NSString * const CtyVideoCaptureErrorPermissionStateUnresolved = @"PERMISSION_STATE_UNRESOLVED";
 static NSString * const CtyVideoCaptureErrorOpenSettingsFailed = @"OPEN_SETTINGS_FAILED";
+static const NSTimeInterval CtyVideoCaptureStopFallbackTimeoutSeconds = 8.0;
 
 static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 {
@@ -101,6 +102,12 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 
 @end
 
+@interface CtyVideoCaptureCordova ()
+@property (atomic, assign) NSInteger stopVideoFallbackToken;
+@property (atomic, assign) BOOL awaitingVideoStopResult;
+@property (atomic, copy) NSString* awaitingVideoCallbackId;
+@end
+
 @implementation CtyVideoCaptureCordova
 @synthesize inUse;
 
@@ -130,7 +137,47 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)pluginInitialize
 {
     self.inUse = NO;
-  
+    self.stopVideoFallbackToken = 0;
+    self.awaitingVideoStopResult = NO;
+    self.awaitingVideoCallbackId = nil;
+}
+
+- (void)armStopVideoFallbackWithCallbackId:(NSString*)callbackId
+{
+    self.awaitingVideoStopResult = YES;
+    self.awaitingVideoCallbackId = callbackId;
+    self.stopVideoFallbackToken += 1;
+
+    NSInteger token = self.stopVideoFallbackToken;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(CtyVideoCaptureStopFallbackTimeoutSeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        if (!self.awaitingVideoStopResult || token != self.stopVideoFallbackToken) {
+            return;
+        }
+
+        NSLog(@"stopVideoCapture fallback triggered: didFinish/didCancel not received");
+        self.awaitingVideoStopResult = NO;
+
+        NSString* pendingCallbackId = self.awaitingVideoCallbackId;
+        self.awaitingVideoCallbackId = nil;
+
+        if (pendingCallbackId != nil && pendingCallbackId.length > 0) {
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_INTERNAL_ERR];
+            [self.commandDelegate sendPluginResult:result callbackId:pendingCallbackId];
+        }
+
+        if (pickerController != nil) {
+            [self cleanupPickerControllerUI:pickerController];
+            pickerController = nil;
+        }
+        self.inUse = NO;
+    });
+}
+
+- (void)disarmStopVideoFallback
+{
+    self.awaitingVideoStopResult = NO;
+    self.awaitingVideoCallbackId = nil;
+    self.stopVideoFallbackToken += 1;
 }
 
 - (void)captureAudio:(CDVInvokedUrlCommand*)command
@@ -338,46 +385,25 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
         return;
     }
     
+    NSLog(@"stopVideoCapture: 开始停止录制");
+
     NSString* callbackId = [(CDVImagePicker*)pickerController callbackId];
-    NSLog(@"stopVideoCapture: 开始停止录制，callbackId=%@", callbackId);
+    [self armStopVideoFallbackWithCallbackId:callbackId];
     
-    // Store video path if available before cleaning up
-    NSString* recordedVideoPath = [(CDVImagePicker*)pickerController recordedVideoPath];
-    
-    // 调用stopVideoCapture如果存在
+    // Stop recording on main thread. Do not cleanup picker here; wait for
+    // didFinishPickingMediaWithInfo to process video and close UI.
     if ([pickerController respondsToSelector:@selector(stopVideoCapture)]) {
-        NSLog(@"stopVideoCapture: 调用 pickerController.stopVideoCapture()");
-        [pickerController stopVideoCapture];
-        NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成");
+        NSLog(@"stopVideoCapture: 调用 pickerController.stopVideoCapture() on main thread");
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [pickerController stopVideoCapture];
+            NSLog(@"stopVideoCapture: pickerController.stopVideoCapture() 完成");
+        });
     } else {
         NSLog(@"stopVideoCapture: pickerController 不支持 stopVideoCapture 方法");
     }
 
-    // UI cleanup must run on main thread; otherwise picker view may remain visible.
-    NSLog(@"stopVideoCapture: on main thread, cleaning up pickerController UI");
-    [self cleanupPickerControllerUI:pickerController];
-    
-    // 注意：只有当 didFinishPickingMediaWithInfo 未被调用时，才在这里处理视频
-    // 如果已经被处理过（videoProcessed=YES），则跳过处理，避免重复
-    CDVPluginResult* result = nil;
-    CDVImagePicker* pickerForCheck = (CDVImagePicker*)pickerController;
-    if (pickerForCheck && !pickerForCheck.videoProcessed && recordedVideoPath && recordedVideoPath.length > 0) {
-        NSLog(@"stopVideoCapture: 处理录制的视频（didFinishPickingMediaWithInfo 未被调用），路径=%@", recordedVideoPath);
-        result = [self processVideo:recordedVideoPath forCallbackId:callbackId];
-        [self.commandDelegate sendPluginResult:result callbackId:callbackId];
-    } else {
-        if (pickerForCheck && pickerForCheck.videoProcessed) {
-            NSLog(@"stopVideoCapture: 视频已在 didFinishPickingMediaWithInfo 中处理，跳过重复处理");
-        } else {
-            NSLog(@"stopVideoCapture: 未找到未处理的视频路径");
-        }
-        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
-        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-    }
-    
-    NSLog(@"stopVideoCapture: 释放 pickerController");
-    pickerController = nil;
-    self.inUse = NO;
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
     
     NSLog(@"===== iOS stopVideoCapture END =====");
 }
@@ -1072,6 +1098,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info
 {
     NSLog(@"===== imagePickerController didFinishPickingMediaWithInfo START =====");
+    [self disarmStopVideoFallback];
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
@@ -1121,6 +1148,7 @@ static BOOL CtyVideoCapturePhotoAccessGranted(PHAuthorizationStatus status)
 - (void)imagePickerControllerDidCancel:(UIImagePickerController*)picker
 {
     NSLog(@"===== imagePickerControllerDidCancel START =====");
+    [self disarmStopVideoFallback];
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
